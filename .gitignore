@@ -1,0 +1,45 @@
+# === C++ Build Output ===
+build/
+bin/
+*.exe
+*.o
+*.obj
+*.out
+.vs/
+out/
+CMakeLists.txt.user
+
+# === Python Cache & Environments ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+.venv/
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# === Firebase Secret Key (CRITICAL SECURITY) ===
+bridge/serviceAccountKey.json
+serviceAccountKey.json
+
+# === Large PDF Documents (Lecture Materials) ===
+# 10MB가 넘는 대형 강의 자료 PDF는 깃허브 저장소 용량 관리를 위해 제외합니다.
+*oneM2M*.pdf
+*W11-TAS*.pdf
+
+# === Local Temp & Scratch ===
+scratch/
+temp_*/
+
+# === IDE Configurations ===
+.idea/
+.vscode/
+*.suo
+*.user
+*.userossc
+*.sln
+*.vcxproj
+*.filters

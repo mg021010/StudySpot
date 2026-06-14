@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudySpot 홍보 포스터</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #ef4444; /* 포인트 레드 */
+            --primary-dark: #dc2626;
+            --secondary: #0f172a; /* 딥 네이비 */
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --bg: #ffffff;
+            --border: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* A4 규격 레이아웃 최적화 */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+            color: var(--text-main);
+            width: 210mm;
+            height: 297mm;
+            margin: 0 auto;
+            padding: 18mm;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 모던 포스터 보더 디자인 */
+        .poster-border {
+            position: absolute;
+            top: 6mm;
+            left: 6mm;
+            right: 6mm;
+            bottom: 6mm;
+            border: 2px solid var(--secondary);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .corner-tag {
+            position: absolute;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 2px;
+            z-index: 11;
+        }
+        .tag-tl { top: 9mm; left: 9mm; }
+
+        /* 헤더 영역 */
+        header {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--secondary);
+            letter-spacing: -2px;
+            line-height: 1.1;
+        }
+
+        .logo span {
+            color: var(--primary);
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 10px;
+            word-break: keep-all;
+        }
+
+        /* 이미지 갤러리 영역 (2열 카드 배치) */
+        .gallery {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 2px solid var(--secondary);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 7px 7px 0px 0px var(--secondary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-image-wrapper {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-bottom: 2px solid var(--secondary);
+            background-color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card-tag {
+            align-self: flex-start;
+            background-color: var(--secondary);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--secondary);
+            margin-bottom: 8px;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            word-break: keep-all;
+        }
+
+        /* 핵심 기능 요약 영역 (2단 그리드로 변경하여 여백 및 폰트 크기 최적화) */
+        .features-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::after {
+            content: "";
+            flex-grow: 1;
+            height: 2px;
+            background-color: var(--secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 3열에서 2열로 조정 */
+            gap: 20px;
+        }
+
+        .feature-box {
+            background-color: #ffffff;
+            border: 2px solid var(--secondary);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 4px 4px 0px 0px var(--secondary);
+        }
+
+        .feature-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--secondary);
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            word-break: keep-all;
+        }
+
+        /* 푸터 영역 */
+        footer {
+            text-align: center;
+            border-top: 2px solid var(--secondary);
+            padding-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .footer-tag {
+            display: inline-block;
+            background-color: var(--primary);
+            color: #ffffff;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 디자인 테두리선 -->
+    <div class="poster-border"></div>
+    <div class="corner-tag tag-tl">STUDYSPOT PROMO</div>
+
+    <!-- 헤더 -->
+    <header>
+        <div class="logo">Study<span>Spot</span></div>
+        <div class="tagline">공부할 곳 찾으러 헤매지 마세요. 내 스타일에 꼭 맞는 최적의 공간을 즉시 찾아줍니다.</div>
+    </header>
+
+    <!-- 이미지 갤러리 -->
+    <div class="gallery">
+        <!-- 실물 제품 카드 -->
+        <div class="card">
+            <div class="card-image-wrapper">
+                <img src="file:///c:/Users/mg021/StudySpot/실물제품.jpg" alt="실물제품">
+            </div>
+            <div class="card-info">
+                <div class="card-tag">Hardware</div>
+                <div class="card-title">스마트 IoT 센서 허브</div>
+                <div class="card-desc">소음 레벨, 밀집도, 온도 등 학습 쾌적도에 큰 영향을 미치는 핵심 지표들을 공간 내부에서 실시간으로 정밀 측정합니다.</div>
+            </div>
+        </div>
+
+        <!-- 웹 사진 카드 -->
+        <div class="card">
+            <div class="card-image-wrapper">
+                <img src="file:///c:/Users/mg021/StudySpot/웹사진.jpg" alt="웹 모니터링 화면">
+            </div>
+            <div class="card-info">
+                <div class="card-tag">Software</div>
+                <div class="card-title">실시간 맞춤형 큐레이션</div>
+                <div class="card-desc">공부 취향(🤫자습, 💻노트북 작업, 🗣️조별 토론)을 선택만 하세요. 현재 공부하기 가장 좋은 최적의 학습 구역을 바로 추천합니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 핵심 기능 요약 (2단 구성) -->
+    <div class="features-section">
+        <div class="section-title">Why StudySpot?</div>
+        <div class="features-grid">
+            <div class="feature-box">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">가만히 있어도 감지하는 정밀 점유 인지</div>
+                <div class="feature-desc">자리에 가만히 정지해 공부하는 인원도 오차 없이 인식하여, 혼잡하거나 비어 있는 상태를 틀림없이 판단합니다.</div>
+            </div>
+            <div class="feature-box">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">내 취향을 저격하는 목적별 최적 매칭</div>
+                <div class="feature-desc">단순 빈자리 알림이 아닌, 실시간 소음 분위기와 쾌적 온도를 다중 분석해 나에게 꼭 맞는 맞춤 점수를 알려줍니다.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer>
+        <div class="footer-text">Developed by StudySpot 4조</div>
+        <div class="footer-tag">AI-BASED SMART CAMPUS PLATFORM</div>
+    </footer>
+
+</body>
+</html>

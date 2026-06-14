@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusSpot: 실시간 공간 매칭 알고리즘 발표 가이드 (Slide 3~4)</title>
+    
+    <!-- Google Fonts (동일한 폰트 구성 유지) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax 수식 렌더러 -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+    
+    <style>
+        :root {
+            --primary: #ef4444; /* 포인트 레드 */
+            --primary-light: #fee2e2;
+            --secondary: #1e3a8a; /* 다크 블루 */
+            --secondary-light: #eff6ff;
+            --text-main: #000000; /* 완전 검은색 고대비 유지 */
+            --text-muted: #334155;
+            --bg-body: #ffffff;
+            --bg-card: #ffffff;
+            --border: #cbd5e1;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.7;
+            padding: 40px;
+        }
+
+        /* 메인 콘텐츠 영역 (중앙 배치) */
+        main {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 40px;
+            border-bottom: 3px solid #ef4444;
+            padding-bottom: 20px;
+        }
+
+        .slide-tag {
+            display: inline-block;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -1px;
+        }
+
+        /* 슬라이드 카드형 컨테이너 */
+        .slide-section {
+            background-color: var(--bg-card);
+            border-radius: 14px;
+            border: 2px solid var(--border);
+            padding: 40px;
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            margin-bottom: 28px;
+        }
+
+        .slide-header h2 {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: var(--secondary);
+            border-bottom: 1.5px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .slide-header .slide-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+        }
+
+        /* 공식 수식 하이라이트 박스 */
+        .math-hero {
+            background: linear-gradient(135deg, var(--secondary-light), #ffffff) !important;
+            border: 1.5px dashed #93c5fd;
+            border-radius: 12px;
+            padding: 28px;
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        .math-hero .mjx-chtml {
+            font-size: 1.4rem !important;
+            color: var(--secondary) !important;
+            font-weight: bold;
+        }
+
+        /* 3단 카드 레이아웃 */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 28px;
+        }
+
+        .sub-card {
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            background-color: var(--bg-card);
+        }
+
+        .sub-card-tag {
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .sub-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .sub-card-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        th {
+            background-color: #f1f5f9 !important;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 0.95rem;
+            border-bottom: 3px solid #94a3b8;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 아코디언 발표자 스크립트 박스 */
+        details.script-box {
+            margin-top: 28px;
+            border-radius: 10px;
+            border: 1.5px solid #bfdbfe;
+            background-color: var(--secondary-light) !important;
+            overflow: hidden;
+        }
+
+        summary.script-summary {
+            padding: 14px 20px;
+            font-weight: 600;
+            color: var(--secondary);
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .script-content {
+            padding: 20px;
+            border-top: 1.5px solid #bfdbfe;
+            background-color: #ffffff;
+            color: #1e3a8a;
+            font-size: 0.98rem;
+            line-height: 1.7;
+        }
+
+        ul, ol {
+            padding-left: 20px;
+            margin: 12px 0;
+        }
+
+        li {
+            margin-bottom: 6px;
+            font-size: 1.02rem;
+            color: var(--text-muted);
+        }
+
+        /* 인쇄 최적화 설정 */
+        @media print {
+            body {
+                padding: 10px;
+                background-color: #ffffff;
+            }
+            .slide-section {
+                border: 2px solid #cbd5e1 !important;
+                page-break-after: always;
+            }
+            .slide-section:last-of-type {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <header>
+            <div class="slide-tag">ALGORITHM SUMMARY</div>
+            <h1>CampusSpot 핵심 알고리즘 상세 명세</h1>
+        </header>
+
+        <!-- Slide 3 -->
+        <section class="slide-section" id="slide3">
+            <div class="slide-header">
+                <h2>Slide 3. 1단계: 실측 데이터 기반의 상태 판정 기준</h2>
+                <div class="slide-subtitle">// SENSOR THRESHOLDS & DETECTION MATRIX</div>
+            </div>
+
+            <h3 style="margin-bottom: 12px; color: var(--secondary);">🔊 1. 음향 분위기 판정 (데시벨 변환식 기반)</h3>
+            <p style="margin-bottom: 16px; font-size: 0.95rem; color: var(--text-muted);">
+                데시벨 산출 공식: $dB = 20 \log_{10}(\text{RMS}) + 100$
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">데시벨 범위 ($dB$)</th>
+                        <th style="width: 35%;">음향 분위기 판정 카테고리</th>
+                        <th style="width: 35%;">허용 학습 활동 성격</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>$dB < 30.0$</strong></td>
+                        <td>🤫 Deep Focus (정막)</td>
+                        <td>속삭임조차 제한되는 최고 수준의 정숙 구역</td>
+                    </tr>
+                    <tr>
+                        <td><strong>$30.0 \le dB < 38.0$</strong></td>
+                        <td>🌬️ White Noise (백색소음)</td>
+                        <td>일반 자습 및 가벼운 마우스/노트북 타건음 허용</td>
+                    </tr>
+                    <tr>
+                        <td><strong>$38.0 \le dB < 45.0$</strong></td>
+                        <td>🎵 BGM (배경음악)</td>
+                        <td>배경음악 및 가벼운 일상 생활음이 있는 카페 분위기</td>
+                    </tr>
+                    <tr>
+                        <td><strong>$dB \ge 45.0$</strong></td>
+                        <td>🗣️ Active Discussion (토론)</td>
+                        <td>조별 회의, 발표 연습 및 자유 대화 가능 구역</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 32px; margin-bottom: 12px; color: var(--secondary);">📶 2. 하이브리드 점유 판정 (BLE 디바이스 $N$ & PIR 타이머 $C$)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>BLE 탐색 수 ($N$)</th>
+                        <th>PIR 타이머 ($C$)</th>
+                        <th>점유 판정 결과</th>
+                        <th>의미 분석 및 오차 보정</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>$N < 0.5$</td>
+                        <td>$C = 0$</td>
+                        <td><strong>⚪ Vacant (비어있음)</strong></td>
+                        <td>이용자 부재 및 유휴 공간</td>
+                    </tr>
+                    <tr>
+                        <td>$N < 3.5$</td>
+                        <td>$C = 0$</td>
+                        <td><strong>🟢 Static Low (매우 여유)</strong></td>
+                        <td>소수 이용자가 조용히 개별 학습 중</td>
+                    </tr>
+                    <tr>
+                        <td>$N < 3.5$</td>
+                        <td>$C > 0$</td>
+                        <td><strong>🟢 Dynamic Low (여유)</strong></td>
+                        <td>소수 이용자가 작업 또는 이동 중</td>
+                    </tr>
+                    <tr>
+                        <td><strong>$N \ge 3.5$</strong></td>
+                        <td><strong>$C = 0$</strong></td>
+                        <td><strong>🟡 Static High (정적 밀집)</strong></td>
+                        <td><strong>많은 사람이 있지만 고도의 자습 집중 상태</strong></td>
+                    </tr>
+                    <tr>
+                        <td>$N \ge 3.5$</td>
+                        <td>$C > 0$</td>
+                        <td><strong>🔴 Dynamic High (혼잡)</strong></td>
+                        <td>다수 인원이 활발히 조별 대화/이동 중</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <details class="script-box" open>
+                <summary class="script-summary">🎙️ Slide 3 발표 대본</summary>
+                <div class="script-content">
+                    "수집된 센서 수치들은 다음과 같은 논리 기준을 가집니다. 마이크 전압값은 로그 변환을 거쳐 30데시벨 미만의 초정막 상태부터 45데시벨 이상의 토론 상태까지 분류됩니다. 
+                    특히 점유 상태 판정에 공을 들였습니다. 일반 PIR 센서는 사용자가 꼼짝 않고 공부하면 오인식되어 빈방 처리를 해버립니다. 
+                    저희는 주변의 블루투스 신호 대수(N)와 10초 쿨다운을 결합한 알고리즘을 얹어, 블루투스 기기가 3.5대 이상 탐색되는데 정지 상태라면 
+                    이를 'Static High', 즉 '조용하게 초집중 중인 정적 밀집 상태'로 오차 없이 감지해 냅니다."
+                </div>
+            </details>
+        </section>
+
+        <!-- Slide 4 -->
+        <section class="slide-section" id="slide4">
+            <div class="slide-header">
+                <h2>Slide 4. 2단계: 종합 적합도 매칭 공식</h2>
+                <div class="slide-subtitle">// ALGORITHM MODEL VARIABLES & MATRIX</div>
+            </div>
+
+            <p style="margin-bottom: 16px;">
+                최종 매칭률(%)은 기본 점수 50점에 소음 가중치($W_{acoustic}$)와 혼잡도 가중치($W_{occupancy}$)를 합산하고, 
+                쾌적 온도를 이탈하면 감점 페널티($P_{temp}$) 5점을 차감하여 구합니다.
+            </p>
+
+            <div class="math-hero">
+                $$\mathbf{SCORE = S_{base} + W_{acoustic} + W_{occupancy} - P_{temp}}$$
+            </div>
+
+            <div class="grid-3">
+                <div class="sub-card">
+                    <div class="sub-card-tag">S_base (50점)</div>
+                    <div class="sub-card-title">기본 기준 점수</div>
+                    <div class="sub-card-desc">
+                        모든 연산의 버팀목이 되는 기본 상수입니다. 가감 수식의 밸런스를 잡고, 스코어 범위 안정화를 도모합니다.
+                    </div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card-tag">W_acoustic (-40 ~ +40)</div>
+                    <div class="sub-card-title">음향 분위기 가중치</div>
+                    <div class="sub-card-desc">
+                        목적별 최적 소음 단계에는 가중치 보너스를 부여하고, 맞지 않는 환경(예: 자습 시 대화 소음)에는 페널티 감점을 부여합니다.
+                    </div>
+                </div>
+                <div class="sub-card">
+                    <div class="sub-card-tag">W_occupancy (-30 ~ +18)</div>
+                    <div class="sub-card-title">하이브리드 점유 가중치</div>
+                    <div class="sub-card-desc">
+                        정적/동적 밀집 상태를 고려합니다. 조용한 자습 환경에는 여유로운 상태 가중치를 주어 상단 큐레이션을 돕습니다.
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 32px; margin-bottom: 12px; color: var(--secondary);">🌡️ 학습 집중을 돕는 온도 페널티 ($P_{temp}$) 적용</h3>
+            <p style="margin-bottom: 12px;">
+                인간의 학습 능률 최적 온도 범위인 <strong>$21.0^\circ\text{C} \sim 24.5^\circ\text{C}$</strong>를 이탈하면 감점을 줍니다.
+            </p>
+            <ul>
+                <li><strong>$P_{temp} = 0\text{점}$ 감점 없음</strong>: 온도 $T$가 쾌적 범위 ($21.0^\circ\text{C} \le T \le 24.5^\circ\text{C}$) 안인 경우</li>
+                <li><strong>$P_{temp} = 5\text{점}$ 감점 적용</strong>: 온도 $T$가 범위를 이탈 ($T < 21.0^\circ\text{C}$ 또는 $T > 24.5^\circ\text{C}$)한 경우</li>
+            </ul>
+
+            <details class="script-box" open>
+                <summary class="script-summary">🎙️ Slide 4 발표 대본</summary>
+                <div class="script-content">
+                    "저희 적합도 스코어 산출 모델은 기본 점수 50점에 소음 가중치, 혼잡도 가중치를 곱하는 게 아닌 '합산(Sum)'하고, 실내 온도가 최적 범위를 벗어나면 5점을 깎아버리는 페널티 차감 연산 구조를 가집니다. 
+                    공부 능률에 최적인 21도와 24.5도 사이의 쾌적한 공간을 사용자에게 추천하기 위해 온도 차감 변수를 두었고, 최종 스코어는 화면 표시 상의 신뢰도를 위해 최소 10%에서 최대 98% 범위 내로 고정하도록 바인딩 필터를 마지막 단계에 걸어 두었습니다."
+                </div>
+            </details>
+        </section>
+    </main>
+
+</body>
+</html>

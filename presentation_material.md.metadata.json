@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "공식 SCORE = S_base + W_acoustic + W_occupancy - P_temp의 각 요소별 상세 정의, 실제 코드에 반영된 임계치 기준, 가중치 분배 표 및 온도 페널티 로직이 구체적으로 기술된 종합 발표 백업 자료입니다.",
+  "updatedAt":  "2026-06-10T11:34:34.352769700Z"
+}

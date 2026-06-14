@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusSpot: 대학 내 나에게 맞는 최적의 학습 공간 추천 및 큐레이션 서비스">
+    <title>CampusSpot: 맞춤형 학습 공간 큐레이션</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Local CSV JS Data Variables -->
+    <script src="datalogs/sensor_data_meeting.js"></script>
+    <script src="datalogs/sensor_data_ml415.js"></script>
+
+    <style>
+        /* CSS Reset & Design Tokens */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        :root {
+            --bg-dark: #070913;
+            --bg-panel: rgba(15, 23, 42, 0.4);
+            --bg-card: rgba(30, 41, 59, 0.45);
+            --bg-card-selected: rgba(59, 130, 246, 0.08);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-selected: rgba(59, 130, 246, 0.6);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            
+            /* UI Colors */
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.25);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            
+            /* Activity Matching Colors */
+            --color-best: #10b981;    /* 최적 (초록) */
+            --color-good: #60a5fa;    /* 추천 (연파랑) */
+            --color-normal: #f59e0b;  /* 보통 (노랑) */
+            --color-avoid: #f87171;   /* 비추천 (빨강) */
+            --color-impossible: #9ca3af; /* 불가 (회색) */
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Header */
+        header {
+            padding: 1rem 2rem;
+            background: rgba(7, 9, 19, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-symbol {
+            width: 2.25rem;
+            height: 2.25rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.35);
+        }
+
+        .logo-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text span {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            display: block;
+            margin-top: -0.1rem;
+        }
+
+        /* User Intent Activity Filters */
+        .activity-filters-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .activity-filters-title {
+            font-size: 0.7rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+        }
+
+        .filters-group {
+            display: flex;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.35rem;
+            border-radius: 9999px;
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Main Curation Layout */
+        .curation-layout {
+            max-width: 1500px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 5rem 2rem;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 1.5rem;
+        }
+
+        /* Left Side: Room Curation List */
+        .space-list-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .section-header {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Space Card UI (Curation style) */
+        .space-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 1.25rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .space-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .space-card.selected {
+            border-color: var(--primary);
+            background: var(--bg-card-selected);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+
+        .space-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .space-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .space-tagline {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            margin-top: 0.15rem;
+        }
+
+        /* Match Score Badge */
+        .match-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .match-percentage {
+            font-size: 1.35rem;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .match-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Curation Badges / Chips */
+        .curation-badges-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .status-chip {
+            padding: 0.3rem 0.65rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+        }
+
+        .status-chip.suitability {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-best);
+            border-color: rgba(16, 185, 129, 0.15);
+        }
+
+        /* Environment metrics line */
+        .space-env-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .space-env-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        /* Glowing card accents */
+        .card-glow-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--text-sub);
+            transition: background-color 0.3s;
+        }
+
+        .space-card.selected .card-glow-indicator {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* Right Side: Selected Space Curation view */
+        .detail-view-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel-container {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Interactive SVG Floor Map for Room View */
+        .map-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            height: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .svg-canvas {
+            width: 100%;
+            height: 100%;
+            max-width: 580px;
+            max-height: 340px;
+        }
+
+        /* SVG Components Styling */
+        .wall {
+            stroke: #1e293b;
+            stroke-width: 4;
+            fill: none;
+        }
+        
+        .floor-zone {
+            fill: rgba(30, 41, 59, 0.2);
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 1.5;
+            transition: all 0.4s ease;
+        }
+
+        .room-table {
+            fill: rgba(30, 41, 59, 0.7);
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 1.5;
+        }
+
+        .room-chair {
+            fill: #1e293b;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 1;
+            transition: all 0.3s;
+        }
+
+        .room-chair.occupied {
+            fill: var(--primary);
+            stroke: rgba(255, 255, 255, 0.3);
+            filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5));
+        }
+
+        .sensor-node-box {
+            fill: #090d16;
+            stroke: rgba(255, 255, 255, 0.25);
+            stroke-width: 1.2;
+        }
+
+        .sensor-led-light {
+            fill: #ef4444;
+            transition: all 0.2s;
+        }
+
+        .sensor-led-light.motion-active {
+            fill: #10b981;
+            filter: drop-shadow(0 0 6px #10b981);
+        }
+
+        /* SVG Motion Waves */
+        .motion-ripple {
+            fill: none;
+            stroke: #ef4444;
+            stroke-width: 1.5;
+            opacity: 0;
+            transform-origin: 290px 170px;
+        }
+
+        .ripple-anim {
+            animation: ripple-key 1.2s infinite ease-out;
+        }
+
+        @keyframes ripple-key {
+            0% { r: 12; opacity: 0.8; }
+            100% { r: 90; opacity: 0; }
+        }
+
+        /* Audio Sound visualizer inside room map */
+        .live-audio-waves {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .audio-bar {
+            width: 4px;
+            height: 4px;
+            background: #94a3b8;
+            border-radius: 2px;
+            transition: height 0.1s ease-out, background-color 0.3s;
+        }
+
+        /* Trends Chart Wrapper */
+        .trends-section {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .chart-box {
+            height: 200px;
+            position: relative;
+        }
+
+        /* Collapsible Developer Console Drawer */
+        .admin-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(7, 9, 19, 0.95);
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(calc(100% - 38px));
+        }
+
+        .admin-drawer.expanded {
+            transform: translateY(0);
+        }
+
+        .drawer-toggle {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(15, 23, 42, 0.95);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            gap: 0.5rem;
+        }
+
+        .drawer-content {
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .sim-time-display {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #10b981;
+        }
+
+        /* Comfort Index Level Helper styling */
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .space-comfort-level {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        /* Utility classes */
+        .text-best { color: var(--color-best) !important; }
+        .text-good { color: var(--color-good) !important; }
+        .text-normal { color: var(--color-normal) !important; }
+        .text-avoid { color: var(--color-avoid) !important; }
+        .text-impossible { color: var(--color-impossible) !important; }
+
+        .bg-best { background-color: var(--color-best) !important; }
+        .bg-good { background-color: var(--color-good) !important; }
+        .bg-normal { background-color: var(--color-normal) !important; }
+        .bg-avoid { background-color: var(--color-avoid) !important; }
+        .bg-impossible { background-color: var(--color-impossible) !important; }
+
+        /* Switch Toggle Slider styling */
+        .switch input:checked + .slider {
+            background-color: var(--primary);
+        }
+        .switch input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        .switch input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header containing Activity Intent Filters -->
+    <header>
+        <div class="logo-group">
+            <div class="logo-symbol">CS</div>
+            <div class="logo-text">
+                <h1>CampusSpot</h1>
+                <span>대학 내 맞춤 학습 공간 매칭 및 큐레이션 서비스</span>
+            </div>
+        </div>
+
+        <!-- Activity Intents Selector -->
+        <div class="activity-filters-container">
+            <div class="activity-filters-title">현재 하고 싶은 활동을 선택하세요</div>
+            <div class="filters-group" id="filtersGroup">
+                <button class="filter-btn active" id="btnStudy" data-activity="study">
+                    <span>🤫</span> 몰입 자습
+                </button>
+                <button class="filter-btn" id="btnLaptop" data-activity="laptop">
+                    <span>💻</span> 노트북 타이핑
+                </button>
+                <button class="filter-btn" id="btnDiscuss" data-activity="discuss">
+                    <span>🗣️</span> 조별 모임 & 토론
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Live Mode Toggle Switch -->
+            <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 0.35rem 0.85rem; border-radius: 9999px;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-sub);">실시간 라이브 연결 (Firebase)</span>
+                <label class="switch" style="position: relative; display: inline-block; width: 34px; height: 18px; margin-bottom: 0;">
+                    <input type="checkbox" id="toggleLiveMode" style="opacity: 0; width: 0; height: 0;">
+                    <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.15); transition: .3s; border-radius: 18px;"></span>
+                </label>
+            </div>
+            <!-- Decorative item showing matching mode -->
+            <span class="live-indicator" id="liveIndicator">실시간 대기 중 (STANDBY)</span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="curation-layout">
+        
+        <!-- Left: List of Study Spaces -->
+        <div class="space-list-column">
+            <div class="section-header">
+                <span>캠퍼스 공간 목록</span>
+                <span>추천 매칭율 순</span>
+            </div>
+
+            <!-- Card 1: Student Council Room Study (학생회실 자습 공간 - 2시간 자습 데이터 매핑) -->
+            <div class="space-card selected" id="cardCouncil" data-space="council">
+                <div class="card-glow-indicator"></div>
+                <div class="space-card-top">
+                    <div>
+                        <h2 class="space-name">학생회실 회의 공간</h2>
+                        <p class="space-tagline">학생회관 2층 • 공동 회의 및 토론 구역</p>
+                    </div>
+                    <div class="match-badge">
+                        <span class="match-percentage" id="councilMatchScore">98%</span>
+                        <span class="match-label text-best" id="councilMatchGrade">최적</span>
+                    </div>
+                </div>
+
+                <div class="curation-badges-row">
+                    <span class="status-chip" id="councilAcousticBadge">🤫 매우 조용함</span>
+                    <span class="status-chip" id="councilOccupancyBadge">🟢 매우 여유</span>
+                </div>
+
+                <div class="space-env-summary">
+                    <div class="space-env-item">
+                        <span>온도/습도:</span>
+                        <span id="councilEnvVal" style="color: var(--text-main); font-weight: 500;">23.0°C / 50%</span>
+                    </div>
+                    <div class="space-comfort-level">
+                        <span class="indicator-dot bg-best" id="councilComfortDot"></span>
+                        <span id="councilComfortText">공부하기 쾌적함</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: ML415 Study (ML415 자습 공간 - 시나리오 2 매핑) -->
+            <div class="space-card" id="cardLab" data-space="lab">
+                <div class="card-glow-indicator"></div>
+                <div class="space-card-top">
+                    <div>
+                        <h2 class="space-name">ML415 자습 공간</h2>
+                        <p class="space-tagline">공학관 4층 • 다인 정적 몰입 학습 구역</p>
+                    </div>
+                    <div class="match-badge">
+                        <span class="match-percentage" id="labMatchScore">85%</span>
+                        <span class="match-label text-good" id="labMatchGrade">추천</span>
+                    </div>
+                </div>
+
+                <div class="curation-badges-row">
+                    <span class="status-chip" id="labAcousticBadge">🌬️ 백색소음 (쾌적)</span>
+                    <span class="status-chip" id="labOccupancyBadge">🟢 여유</span>
+                </div>
+
+                <div class="space-env-summary">
+                    <div class="space-env-item">
+                        <span>온도/습도:</span>
+                        <span id="labEnvVal" style="color: var(--text-main); font-weight: 500;">24.4°C / 34%</span>
+                    </div>
+                    <div class="space-comfort-level">
+                        <span class="indicator-dot bg-best" id="labComfortDot"></span>
+                        <span id="labComfortText">공부하기 쾌적함</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Selected Space Details View (Interactive SVG & Trends Chart) -->
+        <div class="detail-view-column">
+            
+            <!-- Map and Room plan section -->
+            <div class="panel-container">
+                <div class="panel-title">
+                    <span id="selectedSpaceTitle">학생회실 회의 공간</span>
+                    <span class="status-chip suitability" id="suitabilityIndicator" style="background: rgba(59, 130, 246, 0.1); color: var(--primary);">🤫 몰입 자습 최적 공간</span>
+                </div>
+
+                <div class="map-section">
+                    <!-- Floorplan SVG -->
+                    <svg class="svg-canvas" viewBox="0 0 580 340">
+                        <defs>
+                            <pattern id="floor-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.01)" stroke-width="1"/>
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#floor-grid)" />
+                        
+                        <!-- Room boundaries -->
+                        <rect x="25" y="20" width="530" height="300" rx="12" class="wall" />
+                        <!-- Floor zone area coloring -->
+                        <rect id="mapFloorZone" x="120" y="40" width="340" height="260" rx="8" class="floor-zone" />
+                        
+                        <!-- Table -->
+                        <rect x="230" y="110" width="120" height="120" rx="12" class="room-table" />
+                        
+                        <!-- Seats -->
+                        <rect id="svgSeat1" x="185" y="145" width="40" height="40" rx="8" class="room-chair" />
+                        <rect id="svgSeat2" x="355" y="145" width="40" height="40" rx="8" class="room-chair" />
+                        <rect id="svgSeat3" x="270" y="65" width="40" height="40" rx="8" class="room-chair" />
+                        <rect id="svgSeat4" x="270" y="235" width="40" height="40" rx="8" class="room-chair" />
+                        
+                        <!-- IoT Node representation -->
+                        <rect x="280" y="160" width="20" height="20" rx="4" class="sensor-node-box" />
+                        <circle id="svgLed" cx="290" cy="170" r="4" class="sensor-led-light" />
+                        
+                        <!-- PIR ripple ring -->
+                        <circle id="svgRipple" cx="290" cy="170" r="20" class="motion-ripple" />
+
+                        <!-- SVG Text Annotations -->
+                        <text x="290" y="32" text-anchor="middle" fill="rgba(255, 255, 255, 0.25)" font-size="9" font-weight="600" letter-spacing="0.05em">실시간 하이브리드 센서 분석 구역</text>
+                    </svg>
+
+                    <!-- Wave Visualizer overlay -->
+                    <div class="live-audio-waves">
+                        <div class="audio-bar" style="height: 10px;"></div>
+                        <div class="audio-bar" style="height: 25px;"></div>
+                        <div class="audio-bar" style="height: 15px;"></div>
+                        <div class="audio-bar" style="height: 35px;"></div>
+                        <div class="audio-bar" style="height: 8px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll Trend Chart Section -->
+            <div class="trends-section">
+                <div class="card-header-title">최근 1분간의 상세 수치 변동 추이</div>
+                <div class="chart-box">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Hidden collapsible Admin console drawer for play controls during presentation -->
+    <div class="admin-drawer" id="adminDrawer">
+        <div class="drawer-toggle" id="drawerToggle">
+            <span>⚙️ 발표용 시뮬레이터 조작기 (여기를 클릭해 접기/펴기)</span>
+        </div>
+        <div class="drawer-content">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button id="btnSimPlay" class="btn" style="padding: 0.4rem 1rem;">
+                    <svg id="playSvgIcon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span id="btnSimPlayText">시뮬레이션 시작</span>
+                </button>
+                <button id="btnSimReset" class="btn btn-secondary" style="padding: 0.4rem 1rem;">초기화</button>
+            </div>
+
+            <!-- Timeline Scrubber inside drawer -->
+            <div style="flex-grow: 1; max-width: 450px; display: flex; flex-direction: column; gap: 0.35rem; margin: 0 1.5rem;">
+                <div class="timeline-bar" id="timelineBar" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.15); border-radius: 3px; cursor: pointer; position: relative;">
+                    <div id="timelineProgress" class="timeline-progress" style="height: 100%; background: var(--primary); border-radius: 3px; width: 0%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-sub); user-select: none;">
+                    <span>시간 조절 (클릭하여 이동)</span>
+                    <span id="simDataProgress">0 / 0</span>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span class="sim-time-display" id="simTimeText">학생회실: 00:00:00 | ML415: 00:00:00</span>
+                
+                <div class="speed-control" style="border: none; padding: 0;">
+                    <label for="speedSelect" style="font-size: 0.75rem;">배속:</label>
+                    <select id="speedSelect" class="control-select" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; background: #070913;">
+                        <option value="1">1x (실시간)</option>
+                        <option value="10">10x</option>
+                        <option value="30">30x</option>
+                        <option value="60">60x (1분당 1초)</option>
+                        <option value="120">120x</option>
+                        <option value="300">300x</option>
+                    </select>
+                </div>
+
+                <!-- Firebase URL Input -->
+                <div id="firebaseUrlConfigGroup" style="display: flex; align-items: center; gap: 0.4rem; border-left: 1px solid var(--border-color); padding-left: 1rem; margin-left: 0.5rem;">
+                    <label for="firebaseDbUrlInput" style="font-size: 0.75rem; color: var(--text-sub); white-space: nowrap;">DB URL:</label>
+                    <input type="text" id="firebaseDbUrlInput" placeholder="https://your-rtdb.firebaseio.com/" style="background: rgba(255,255,255,0.03); color: white; border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; width: 220px; outline: none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Curation JS Logic -->
+    <script type="module">
+        // Firebase JS SDK Modules Integration
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Global Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        let database = null;
+        let firebaseListeners = [];
+        let isLiveMode = false;
+        let lastChartTimestamp = "";
+
+        let liveRoomData = {
+            council: null,
+            lab: null
+        };
+
+        // CSV Parser
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i]) continue;
+                const values = lines[i].split(',');
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header.trim()] = values[index] ? values[index].trim() : '';
+                });
+                data.push(row);
+            }
+            return data;
+        }
+
+        // Translate labels to user-friendly Korean
+        function translateAcoustic(category) {
+            const clean = category.trim();
+            if (clean === "Deep Focus") return "🤫 매우 조용함";
+            if (clean === "White Noise") return "🌬️ 백색소음 (쾌적)";
+            if (clean === "BGM") return "🎵 잔잔한 음악";
+            if (clean === "Active Discussion") return "🗣️ 활발한 토론";
+            return "분위기 측정 중";
+        }
+
+        function translateOccupancy(status) {
+            const clean = status.trim();
+            if (clean === "Vacant") return "⚪ 비어있음";
+            if (clean.includes("Static Low")) return "🟢 매우 여유 (개인 학습)";
+            if (clean.includes("Dynamic Low")) return "🟢 여유 (가벼운 작업)";
+            if (clean.includes("Static High")) return "🟡 다소 혼잡 (밀집 자습)";
+            if (clean.includes("Dynamic High")) return "🔴 매우 혼잡 (토론/모임)";
+            return "상태 판별 중";
+        }
+
+        function getComfortInfo(temp, hum) {
+            if (temp === 0) return { text: "센서 준비 중", colorClass: "text-impossible", dotClass: "bg-impossible" };
+            if (temp >= 21 && temp <= 24.5) {
+                return { text: "공부하기 좋은 쾌적한 상태", colorClass: "text-best", dotClass: "bg-best" };
+            } else if (temp > 24.5) {
+                return { text: "실내 공기가 다소 더움", colorClass: "text-normal", dotClass: "bg-normal" };
+            } else {
+                return { text: "실내가 다소 서늘함", colorClass: "text-normal", dotClass: "bg-normal" };
+            }
+        }
+
+        // Curation Matching Logic based on current state & selected user activity
+        function calculateCurationScore(acousticCat, occupancyStat, temp, activeFilter) {
+            const acc = acousticCat.trim();
+            const occ = occupancyStat.trim();
+            
+            let score = 50; // base
+
+            if (activeFilter === "study") {
+                // Wants absolute quiet
+                if (acc === "Deep Focus") score += 30;
+                else if (acc === "White Noise") score += 15;
+                else if (acc === "BGM") score -= 20;
+                else if (acc === "Active Discussion") score -= 40;
+
+                if (occ.includes("Static Low") || occ === "Vacant") score += 18;
+                else if (occ.includes("Dynamic Low")) score += 5;
+                else if (occ.includes("Static High")) score += 0;
+                else if (occ.includes("Dynamic High")) score -= 30;
+            } 
+            else if (activeFilter === "laptop") {
+                // Wants typing friendly, somewhat quiet
+                if (acc === "Deep Focus") score += 20;
+                else if (acc === "White Noise") score += 30;
+                else if (acc === "BGM") score += 15;
+                else if (acc === "Active Discussion") score -= 15;
+
+                if (occ.includes("Dynamic Low")) score += 18;
+                else if (occ.includes("Static Low")) score += 10;
+                else if (occ.includes("Dynamic High") || occ.includes("Static High")) score += 0;
+                else if (occ === "Vacant") score += 5;
+            } 
+            else if (activeFilter === "discuss") {
+                // Wants talking allowed
+                if (acc === "Active Discussion") score += 40;
+                else if (acc === "BGM") score += 25;
+                else if (acc === "White Noise") score -= 10;
+                else if (acc === "Deep Focus") score -= 40;
+
+                if (occ.includes("Dynamic High")) score += 8;
+                if (occ.includes("Dynamic Low")) score += 8;
+                if (occ === "Vacant") score += 0;
+            }
+
+            // 온도 페널티 적용 (실내 온도 감점)
+            if (temp > 0) {
+                if (temp < 21.0 || temp > 24.5) {
+                    score -= 5; // 비쾌적 온도 감점
+                }
+            }
+
+            // Cap score between 10% and 98% (looks realistic)
+            return Math.max(10, Math.min(98, score));
+        }
+
+        // Assess match grade from numeric score
+        function getGradeForScore(score) {
+            let grade = "보통";
+            let colorClass = "text-normal";
+            if (score >= 90) {
+                grade = "최적";
+                colorClass = "text-best";
+            } else if (score >= 75) {
+                grade = "추천";
+                colorClass = "text-good";
+            } else if (score >= 45) {
+                grade = "보통";
+                colorClass = "text-normal";
+            } else {
+                grade = "비추천";
+                colorClass = "text-avoid";
+            }
+            return { grade, colorClass };
+        }
+
+        // Scenarios mapping data
+        let councilCSVRaw = parseCSV(SENSOR_DATA_MEETING_CSV);
+        let labCSVRaw = parseCSV(SENSOR_DATA_ML415_CSV);
+        
+        let simTimer = null;
+        let isSimActive = false;
+        let simTickIndex = 0;
+        let selectedSpace = "council"; // "council" or "lab"
+        let activeActivityFilter = "study"; // "study", "laptop", "discuss"
+
+        // Smoothed match scores for EMA filtering (prevents flickering)
+        let smoothedScores = {
+            council: 50,
+            lab: 50
+        };
+
+        // DOM elements
+        const btnSimPlay = document.getElementById('btnSimPlay');
+        const btnSimReset = document.getElementById('btnSimReset');
+        const playSvgIcon = document.getElementById('playSvgIcon');
+        const btnSimPlayText = document.getElementById('btnSimPlayText');
+        const speedSelect = document.getElementById('speedSelect');
+        const simTimeText = document.getElementById('simTimeText');
+        const adminDrawer = document.getElementById('adminDrawer');
+        const drawerToggle = document.getElementById('drawerToggle');
+        
+        // Cards
+        const cardCouncil = document.getElementById('cardCouncil');
+        const cardLab = document.getElementById('cardLab');
+        const filtersGroup = document.getElementById('filtersGroup');
+        
+        // Detailed View panel DOM
+        const selectedSpaceTitle = document.getElementById('selectedSpaceTitle');
+        const suitabilityIndicator = document.getElementById('suitabilityIndicator');
+        const mapFloorZone = document.getElementById('mapFloorZone');
+        const svgLed = document.getElementById('svgLed');
+        const svgRipple = document.getElementById('svgRipple');
+        const liveIndicator = document.getElementById('liveIndicator');
+
+        // Timeline progress scrubber inside main layout
+        const timelineProgress = document.getElementById('timelineProgress');
+        const timelineBar = document.getElementById('timelineBar');
+
+        // Initialize Chart.js
+        const chartCtx = document.getElementById('trendsChart').getContext('2d');
+        const trendsChart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '소음도 (dB)',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.35,
+                        yAxisID: 'yDb',
+                        fill: true
+                    },
+                    {
+                        label: '무선 기기 감지 (대)',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.35,
+                        yAxisID: 'yBle'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#6b7280', font: { size: 9 } }
+                    },
+                    yDb: {
+                        type: 'linear',
+                        position: 'left',
+                        min: 15,
+                        max: 70,
+                        title: { display: true, text: '소음도 (dB)', color: '#94a3b8', font: { size: 9 } },
+                        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                        ticks: { color: '#6b7280' }
+                    },
+                    yBle: {
+                        type: 'linear',
+                        position: 'right'        // Render a single frame (supports both Simulation and Firebase Live modes)
+        function renderFrame(rowCouncil, rowLab, isSim) {
+            const cAcoustic = rowCouncil.Acoustic_Category;
+            const cOccupancy = rowCouncil.Occupancy_Status;
+            const cTemp = parseFloat(rowCouncil.Temperature) || 0;
+            const cHum = parseFloat(rowCouncil.Humidity) || 0;
+            const cSoundDb = parseFloat(rowCouncil.Sound_dB) || 0;
+            const cBleCount = parseFloat(rowCouncil.BLE_Count) || 0;
+            const cMotion = parseInt(rowCouncil.Motion) || 0;
+
+            const lAcoustic = rowLab.Acoustic_Category;
+            const lOccupancy = rowLab.Occupancy_Status;
+            const lTemp = parseFloat(rowLab.Temperature) || 0;
+            const lHum = parseFloat(rowLab.Humidity) || 0;
+            const lSoundDb = parseFloat(rowLab.Sound_dB) || 0;
+            const lBleCount = parseFloat(rowLab.BLE_Count) || 0;
+            const lMotion = parseInt(rowLab.Motion) || 0;
+
+            // Calculate targets
+            const targetCouncil = calculateCurationScore(cAcoustic, cOccupancy, cTemp, activeActivityFilter);
+            const targetLab = calculateCurationScore(lAcoustic, lOccupancy, lTemp, activeActivityFilter);
+
+            // Apply Exponential Moving Average (EMA) smoothing
+            if (isSim && simTickIndex === 0) {
+                smoothedScores.council = targetCouncil;
+                smoothedScores.lab = targetLab;
+            } else {
+                // Slightly faster damping for live adjustments
+                const alpha = isSim ? 0.08 : 0.25;
+                smoothedScores.council = smoothedScores.council + alpha * (targetCouncil - smoothedScores.council);
+                smoothedScores.lab = smoothedScores.lab + alpha * (targetLab - smoothedScores.lab);
+            }
+
+            const cScoreRounded = Math.round(smoothedScores.council);
+            const lScoreRounded = Math.round(smoothedScores.lab);
+
+            const cCuration = getGradeForScore(cScoreRounded);
+            const lCuration = getGradeForScore(lScoreRounded);
+            const cComfort = getComfortInfo(cTemp, cHum);
+
+            // Update Card A DOM
+            document.getElementById('councilMatchScore').innerText = `${cScoreRounded}%`;
+            document.getElementById('councilMatchGrade').innerText = cCuration.grade;
+            document.getElementById('councilMatchGrade').className = `match-label ${cCuration.colorClass}`;
+            document.getElementById('councilAcousticBadge').innerText = translateAcoustic(cAcoustic);
+            document.getElementById('councilOccupancyBadge').innerText = translateOccupancy(cOccupancy);
+            
+            if (cTemp === 0) {
+                document.getElementById('councilEnvVal').innerText = "센서 연결 중...";
+            } else {
+                document.getElementById('councilEnvVal').innerText = `${cTemp.toFixed(1)}°C / ${cHum.toFixed(1)}%`;
+            }
+            document.getElementById('councilComfortText').innerText = cComfort.text;
+            document.getElementById('councilComfortText').className = cComfort.colorClass;
+            document.getElementById('councilComfortDot').className = `indicator-dot ${cComfort.dotClass}`;
+
+            // Process Space B DOM
+            const lComfort = getComfortInfo(lTemp, lHum);
+
+            // Update Card B DOM
+            document.getElementById('labMatchScore').innerText = `${lScoreRounded}%`;
+            document.getElementById('labMatchGrade').innerText = lCuration.grade;
+            document.getElementById('labMatchGrade').className = `match-label ${lCuration.colorClass}`;
+            document.getElementById('labAcousticBadge').innerText = translateAcoustic(lAcoustic);
+            document.getElementById('labOccupancyBadge').innerText = translateOccupancy(lOccupancy);
+            
+            if (lTemp === 0) {
+                document.getElementById('labEnvVal').innerText = "센서 연결 중...";
+            } else {
+                document.getElementById('labEnvVal').innerText = `${lTemp.toFixed(1)}°C / ${lHum.toFixed(1)}%`;
+            }
+            document.getElementById('labComfortText').innerText = lComfort.text;
+            document.getElementById('labComfortText').className = lComfort.colorClass;
+            document.getElementById('labComfortDot').className = `indicator-dot ${lComfort.dotClass}`;
+
+            // Highlight sorting or best match visually
+            if (cScoreRounded >= lScoreRounded) {
+                cardCouncil.style.order = 1;
+                cardLab.style.order = 2;
+            } else {
+                cardCouncil.style.order = 2;
+                cardLab.style.order = 1;
+            }
+
+            // 3. Update the Selected Room Detail view (SVG and Chart)
+            let activeRow = (selectedSpace === "council") ? rowCouncil : rowLab;
+            let activeName = (selectedSpace === "council") ? "학생회실 회의 공간" : "ML415 자습 공간";
+            let activeMatch = (selectedSpace === "council") ? cCuration : lCuration;
+            let activeScore = (selectedSpace === "council") ? cScoreRounded : lScoreRounded;
+            
+            selectedSpaceTitle.innerText = activeName;
+            
+            // Suitability title translator
+            let activityKor = "몰입 자습";
+            if (activeActivityFilter === "laptop") activityKor = "노트북 작업";
+            if (activeActivityFilter === "discuss") activityKor = "조별 모임 & 토론";
+            suitabilityIndicator.innerText = `현재 ${activityKor} 환경 적합도: ${activeMatch.grade} (${activeScore}%)`;
+            
+            // Remove previous suitability colors and apply current match grade color
+            suitabilityIndicator.className = "status-chip suitability";
+            if (activeMatch.grade === "최적") {
+                suitabilityIndicator.style.background = "rgba(16, 185, 129, 0.1)";
+                suitabilityIndicator.style.color = "var(--color-best)";
+            } else if (activeMatch.grade === "추천") {
+                suitabilityIndicator.style.background = "rgba(96, 165, 250, 0.1)";
+                suitabilityIndicator.style.color = "var(--color-good)";
+            } else if (activeMatch.grade === "보통") {
+                suitabilityIndicator.style.background = "rgba(245, 158, 11, 0.1)";
+                suitabilityIndicator.style.color = "var(--color-normal)";
+            } else {
+                suitabilityIndicator.style.background = "rgba(248, 113, 113, 0.1)";
+                suitabilityIndicator.style.color = "var(--color-avoid)";
+            }
+
+            // Selected details variable mappings
+            const aTemp = parseFloat(activeRow.Temperature) || 0;
+            const aHum = parseFloat(activeRow.Humidity) || 0;
+            const aMotion = parseInt(activeRow.Motion) || 0;
+            const aSoundDb = parseFloat(activeRow.Sound_dB) || 0;
+            const aBle = parseFloat(activeRow.BLE_Count) || 0;
+            const aAcoustic = activeRow.Acoustic_Category;
+            const aOccupancy = activeRow.Occupancy_Status;
+
+            // Trigger ripple ring based on motion
+            if (aMotion === 1) {
+                svgLed.classList.add('motion-active');
+                svgRipple.classList.add('ripple-anim');
+            } else {
+                svgLed.classList.remove('motion-active');
+                svgRipple.classList.remove('ripple-anim');
+            }
+
+            // Occupy SVG seats based on BLE device counts
+            const seats = [
+                document.getElementById('svgSeat1'),
+                document.getElementById('svgSeat2'),
+                document.getElementById('svgSeat3'),
+                document.getElementById('svgSeat4')
+            ];
+            seats.forEach(s => {
+                s.classList.remove('occupied');
+                s.style.fill = '#1e293b';
+            });
+            const seatsToOccupy = Math.min(4, Math.floor(aBle));
+            for (let i = 0; i < seatsToOccupy; i++) {
+                seats[i].classList.add('occupied');
+                seats[i].style.fill = (selectedSpace === "council") ? "var(--color-deep-focus)" : "var(--color-active)";
+            }
+
+            // Table area color reflects match status
+            const matchStatusCol = (selectedSpace === "council") ? getStatusColor(cOccupancy) : getStatusColor(lOccupancy);
+            mapFloorZone.style.fill = matchStatusCol + "05";
+            mapFloorZone.style.stroke = matchStatusCol + "25";
+
+            // Audio wave bar scaling
+            const visualHeight = Math.max(4, Math.min(44, (aSoundDb - 20) * 1.4));
+            document.querySelectorAll('.audio-bar').forEach((bar, idx) => {
+                const bounce = Math.sin(idx * 1.3 + Date.now()/120) * 6;
+                bar.style.height = `${Math.max(4, visualHeight + bounce)}px`;
+                bar.style.backgroundColor = (selectedSpace === "council") ? "var(--color-deep-focus)" : "var(--color-active)";
+            });
+
+            // 4. Update dynamic chart scrolling data
+            const timeLabel = activeRow.Timestamp.split(' ')[1] || activeRow.Timestamp;
+            if (!isLiveMode || timeLabel !== lastChartTimestamp) {
+                if (isLiveMode) lastChartTimestamp = timeLabel;
+                
+                trendsChart.data.labels.push(timeLabel);
+                trendsChart.data.datasets[0].data.push(aSoundDb);
+                trendsChart.data.datasets[1].data.push(aBle);
+                
+                if (trendsChart.data.labels.length > 40) {
+                    trendsChart.data.labels.shift();
+                    trendsChart.data.datasets[0].data.shift();
+                    trendsChart.data.datasets[1].data.shift();
+                }
+                trendsChart.update('none');
+            }
+
+            // 5. Update timeline progress visual
+            if (isSim) {
+                const idxCouncil = simTickIndex % councilCSVRaw.length;
+                const idxLab = simTickIndex % labCSVRaw.length;
+                const activeCSVTotal = (selectedSpace === "council") ? councilCSVRaw.length : labCSVRaw.length;
+                const activeIdx = (selectedSpace === "council") ? idxCouncil : idxLab;
+                
+                timelineProgress.style.width = `${((activeIdx + 1) / activeCSVTotal) * 100}%`;
+                document.getElementById('simDataProgress').innerText = `${activeIdx + 1} / ${activeCSVTotal}`;
+                
+                // 6. Update administrative panel texts
+                const timeA = rowCouncil.Timestamp.split(' ')[1] || "00:00:00";
+                const timeB = rowLab.Timestamp.split(' ')[1] || "00:00:00";
+                simTimeText.innerText = `학생회실 시각: ${timeA} (레코드: ${idxCouncil+1}/${councilCSVRaw.length}) | ML415 시각: ${timeB} (레코드: ${idxLab+1}/${labCSVRaw.length})`;
+            } else {
+                timelineProgress.style.width = '100%';
+                document.getElementById('simDataProgress').innerText = "LIVE (수신 중)";
+                simTimeText.innerText = `학생회실 라이브: ${rowCouncil.Timestamp} | ML415 라이브: ${rowLab.Timestamp}`;
+            }
+        }
+
+        // Core tick processor (Simulation mode)
+        function updateUIFrame() {
+            const idxCouncil = simTickIndex % councilCSVRaw.length;
+            const idxLab = simTickIndex % labCSVRaw.length;
+            const rowCouncil = councilCSVRaw[idxCouncil];
+            const rowLab = labCSVRaw[idxLab];
+            renderFrame(rowCouncil, rowLab, true);
+        }
+
+        // Live mode processor
+        function normalizeLiveData(data) {
+            if (!data) return null;
+            if ('Acoustic_Category' in data) {
+                return data;
+            }
+            return {
+                Acoustic_Category: data.acousticCategory || "Unknown",
+                Occupancy_Status: data.occupancyStatus || "Unknown",
+                Temperature: data.temperature !== undefined ? String(data.temperature) : "0.0",
+                Humidity: data.humidity !== undefined ? String(data.humidity) : "0.0",
+                Sound_dB: data.soundDb !== undefined ? String(data.soundDb) : "0.0",
+                BLE_Count: data.bleDeviceCount !== undefined ? String(data.bleDeviceCount) : "0.0",
+                Motion: data.pirMotion !== undefined ? String(data.pirMotion) : "0",
+                Timestamp: data.timestamp || new Date().toLocaleTimeString()
+            };
+        }
+
+        function updateUIFromLive() {
+            if (!isLiveMode) return;
+            
+            const rowCouncil = normalizeLiveData(liveRoomData.council) || {
+                Acoustic_Category: "Deep Focus",
+                Occupancy_Status: "Vacant",
+                Temperature: "0.0",
+                Humidity: "0.0",
+                Sound_dB: "0.0",
+                BLE_Count: "0.0",
+                Motion: "0",
+                Timestamp: "00:00:00"
+            };
+            
+            const rowLab = normalizeLiveData(liveRoomData.lab) || {
+                Acoustic_Category: "Deep Focus",
+                Occupancy_Status: "Vacant",
+                Temperature: "0.0",
+                Humidity: "0.0",
+                Sound_dB: "0.0",
+                BLE_Count: "0.0",
+                Motion: "0",
+                Timestamp: "00:00:00"
+            };
+
+            renderFrame(rowCouncil, rowLab, false);
+        }
+
+        function bindFirebaseListeners() {
+            if (!database) return;
+            
+            console.log("[FIREBASE] Binding real-time listeners for spaces...");
+            
+            const councilRef = ref(database, 'spaces/council');
+            const labRef = ref(database, 'spaces/lab');
+            
+            const councilUnsubscribe = onValue(councilRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    console.log("[FIREBASE] Received council status update:", data);
+                    liveRoomData.council = data;
+                    if (isLiveMode) {
+                        updateUIFromLive();
+                    }
+                }
+            }, (error) => {
+                console.error("[FIREBASE] Council listener error:", error);
+            });
+            
+            const labUnsubscribe = onValue(labRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    console.log("[FIREBASE] Received lab status update:", data);
+                    liveRoomData.lab = data;
+                    if (isLiveMode) {
+                        updateUIFromLive();
+                    }
+                }
+            }, (error) => {
+                console.error("[FIREBASE] Lab listener error:", error);
+            });
+            
+            firebaseListeners.push(councilUnsubscribe);
+            firebaseListeners.push(labUnsubscribe);
+        }
+
+        function setupFirebaseConnection(dbUrl) {
+            if (!dbUrl) {
+                console.warn("[FIREBASE] No Database URL provided.");
+                return;
+            }
+            
+            // Clean up any previous listeners
+            while (firebaseListeners.length > 0) {
+                const unsubscribe = firebaseListeners.pop();
+                if (typeof unsubscribe === 'function') unsubscribe();
+            }
+            
+            try {
+                database = getDatabase(app, dbUrl);
+                console.log("[FIREBASE] Connected to Database URL:", dbUrl);
+                
+                // Save to localStorage for persistence
+                localStorage.setItem('firebase_db_url', dbUrl);
+                
+                // If live mode is active, bind immediately
+                if (isLiveMode) {
+                    bindFirebaseListeners();
+                }
+            } catch (e) {
+                console.error("[FIREBASE] Connection initialization failed:", e);
+            }
+        }
+
+        // Color mapper helper
+        function getStatusColor(statusStr) {
+            if (statusStr.includes("Vacant")) return 'var(--color-vacant)';
+            if (statusStr.includes("Deep Focus") || statusStr.includes("Static High")) return 'var(--color-deep-focus)';
+            if (statusStr.includes("BGM")) return 'var(--color-bgm)';
+            if (statusStr.includes("Active") || statusStr.includes("Dynamic")) return 'var(--color-active)';
+            if (statusStr.includes("White Noise")) return 'var(--color-white-noise)';
+            return 'var(--color-vacant)';
+        }
+
+        // Comfort index dot setter
+        function updateComfortBadge(val) {
+            // reset comfort dot backgrounds if needed
+        }
+
+        // Simulation state controllers
+        function startSimulation() {
+            if (isSimActive || isLiveMode) return;
+            isSimActive = true;
+            
+            btnSimPlayText.innerText = "시뮬레이션 일시정지";
+            playSvgIcon.innerHTML = `<rect x="4" y="4" width="4" height="16" fill="currentColor"></rect><rect x="16" y="4" width="4" height="16" fill="currentColor"></rect>`;
+            
+            liveIndicator.innerText = "실시간 추천 분석 중 (ON)";
+            liveIndicator.style.background = "rgba(16, 185, 129, 0.1)";
+            liveIndicator.style.color = "#10b981";
+
+            const speed = parseInt(speedSelect.value) || 1;
+            const interval = 1000 / speed;
+            
+            simTimer = setInterval(() => {
+                updateUIFrame();
+                simTickIndex++;
+            }, interval);
+        }
+
+        function pauseSimulation() {
+            if (!isSimActive) return;
+            isSimActive = false;
+            
+            btnSimPlayText.innerText = "시뮬레이션 시작";
+            playSvgIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"></polygon>`;
+            
+            liveIndicator.innerText = "실시간 대기 중 (STANDBY)";
+            liveIndicator.style.background = "rgba(255, 255, 255, 0.05)";
+            liveIndicator.style.color = "var(--text-sub)";
+            
+            clearInterval(simTimer);
+        }
+
+        function toggleSimPlay() {
+            if (isSimActive) {
+                pauseSimulation();
+            } else {
+                startSimulation();
+            }
+        }
+
+        function handleSpeedChange() {
+            if (isSimActive) {
+                clearInterval(simTimer);
+                const speed = parseInt(speedSelect.value) || 1;
+                const interval = 1000 / speed;
+                
+                simTimer = setInterval(() => {
+                    updateUIFrame();
+                    simTickIndex++;
+                }, interval);
+            }
+        }
+
+        // Scrubbing/Scrolling timeline manually
+        function scrubTimeline(e) {
+            if (isLiveMode) return;
+            const rect = timelineBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            
+            const activeCSVTotal = (selectedSpace === "council") ? councilCSVRaw.length : labCSVRaw.length;
+            const targetIdx = Math.floor(percentage * activeCSVTotal);
+            
+            // Offset main tick index
+            simTickIndex = targetIdx;
+            
+            // Clear chart and let it rebuild
+            trendsChart.data.labels = [];
+            trendsChart.data.datasets[0].data = [];
+            trendsChart.data.datasets[1].data = [];
+            
+            // Fill past 40 samples for the selected space
+            const activeRawData = (selectedSpace === "council") ? councilCSVRaw : labCSVRaw;
+            const startIdx = Math.max(0, targetIdx - 40);
+            for (let i = startIdx; i <= targetIdx; i++) {
+                const row = activeRawData[i];
+                if (!row) continue;
+                const db = parseFloat(row.Sound_dB) || 0;
+                const ble = parseFloat(row.BLE_Count) || 0;
+                const timestamp = row.Timestamp;
+                const timeLabel = timestamp.split(' ')[1] || timestamp;
+                
+                trendsChart.data.labels.push(timeLabel);
+                trendsChart.data.datasets[0].data.push(db);
+                trendsChart.data.datasets[1].data.push(ble);
+            }
+            trendsChart.update();
+
+            updateUIFrame();
+        }
+
+        // Initialize events
+        window.addEventListener('load', () => {
+            initSimulation();
+
+            // Load saved Firebase DB URL
+            const dbUrlInput = document.getElementById('firebaseDbUrlInput');
+            const savedUrl = localStorage.getItem('firebase_db_url') || "https://study-spot-demo-default-rtdb.firebaseio.com/";
+            dbUrlInput.value = savedUrl;
+            
+            // Connect to Firebase
+            setupFirebaseConnection(savedUrl);
+            
+            // Handle URL changes
+            dbUrlInput.addEventListener('change', () => {
+                setupFirebaseConnection(dbUrlInput.value.trim());
+            });
+
+            // Handle Live Mode Toggle Switch
+            const toggleLiveMode = document.getElementById('toggleLiveMode');
+            toggleLiveMode.addEventListener('change', () => {
+                if (toggleLiveMode.checked) {
+                    // Turn Live Mode ON
+                    pauseSimulation();
+                    isLiveMode = true;
+                    
+                    // Clear chart for incoming fresh data
+                    trendsChart.data.labels = [];
+                    trendsChart.data.datasets[0].data = [];
+                    trendsChart.data.datasets[1].data = [];
+                    trendsChart.update();
+                    
+                    // Disable simulation playback UI controls
+                    btnSimPlay.disabled = true;
+                    btnSimReset.disabled = true;
+                    speedSelect.disabled = true;
+                    btnSimPlay.style.opacity = 0.5;
+                    btnSimReset.style.opacity = 0.5;
+                    speedSelect.style.opacity = 0.5;
+                    timelineBar.style.pointerEvents = 'none';
+                    timelineBar.style.opacity = 0.5;
+                    
+                    liveIndicator.innerText = "실시간 라이브 가동 중 (ONLINE)";
+                    liveIndicator.style.background = "rgba(16, 185, 129, 0.1)";
+                    liveIndicator.style.color = "#10b981";
+                    
+                    // Start subscriptions
+                    bindFirebaseListeners();
+                    
+                    // Trigger UI frame update immediately from current memory
+                    updateUIFromLive();
+                } else {
+                    // Turn Live Mode OFF
+                    isLiveMode = false;
+                    
+                    // Enable simulation playback UI controls
+                    btnSimPlay.disabled = false;
+                    btnSimReset.disabled = false;
+                    speedSelect.disabled = false;
+                    btnSimPlay.style.opacity = 1;
+                    btnSimReset.style.opacity = 1;
+                    speedSelect.style.opacity = 1;
+                    timelineBar.style.pointerEvents = 'auto';
+                    timelineBar.style.opacity = 1;
+                    
+                    // Unsubscribe database updates
+                    while (firebaseListeners.length > 0) {
+                        const unsubscribe = firebaseListeners.pop();
+                        if (typeof unsubscribe === 'function') unsubscribe();
+                    }
+                    
+                    // Restore Simulation Mode
+                    initSimulation();
+                }
+            });
+            
+            // Space card selection events
+            cardCouncil.addEventListener('click', () => {
+                selectedSpace = "council";
+                cardCouncil.classList.add('selected');
+                cardLab.classList.remove('selected');
+                
+                // Redraw chart immediately for chosen space
+                trendsChart.data.labels = [];
+                trendsChart.data.datasets[0].data = [];
+                trendsChart.data.datasets[1].data = [];
+                trendsChart.update();
+                
+                if (isLiveMode) {
+                    updateUIFromLive();
+                } else {
+                    updateUIFrame();
+                }
+                
+                // Smooth scroll to details on small screens
+                if (window.innerWidth < 1024) {
+                    document.querySelector('.detail-view-column').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            cardLab.addEventListener('click', () => {
+                selectedSpace = "lab";
+                cardLab.classList.add('selected');
+                cardCouncil.classList.remove('selected');
+                
+                // Redraw chart immediately for chosen space
+                trendsChart.data.labels = [];
+                trendsChart.data.datasets[0].data = [];
+                trendsChart.data.datasets[1].data = [];
+                trendsChart.update();
+                
+                if (isLiveMode) {
+                    updateUIFromLive();
+                } else {
+                    updateUIFrame();
+                }
+                
+                // Smooth scroll to details on small screens
+                if (window.innerWidth < 1024) {
+                    document.querySelector('.detail-view-column').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            // Activity filter button selection events
+            filtersGroup.addEventListener('click', (e) => {
+                const btn = e.target.closest('.filter-btn');
+                if (!btn) return;
+                
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                activeActivityFilter = btn.dataset.activity;
+                
+                if (isLiveMode) {
+                    updateUIFromLive();
+                } else {
+                    updateUIFrame();
+                }
+            });
+
+            // Collapsible Admin drawer toggler
+            drawerToggle.addEventListener('click', () => {
+                adminDrawer.classList.toggle('expanded');
+            });
+
+            // Admin button events
+            btnSimPlay.addEventListener('click', toggleSimPlay);
+            btnSimReset.addEventListener('click', initSimulation);
+            speedSelect.addEventListener('change', handleSpeedChange);
+            timelineBar.addEventListener('click', scrubTimeline);
+        });
+    </script>
+</body>
+</html>
