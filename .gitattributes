@@ -1,0 +1,12 @@
+# === GitHub Linguist Language Detect Overrides ===
+
+# 1. HTML 발표 및 포스터, 시나리오 로그 파일들을 언어 분석 통계에서 전면 제외
+*.html linguist-detectable=false
+*.md linguist-detectable=false
+*.js linguist-detectable=false
+datalogs/ linguist-detectable=false
+docs/ linguist-detectable=false
+
+# 2. C++ 헤더 파일(.hpp)이 C++ 언어로 명확하게 감지되도록 지정
+*.hpp linguist-language=cpp
+*.cpp linguist-language=cpp
