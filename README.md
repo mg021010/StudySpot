@@ -28,39 +28,40 @@
 graph TD
     %% 1. Hardware/Edge Node
     subgraph EdgeNode ["엣지 노드 (라즈베리파이 3)"]
-        Sensors["DHT11, PIR, I2S Mic, BLE Chip"] -->|Raw Data| Main["main.cpp (Edge Loop)"]
+        Sensors[/DHT11, PIR, I2S Mic, BLE Chip/] -->|Raw Data| Main["main.cpp (Edge Loop)"]
         
         %% Audio data privacy flow
         Main -->|Acoustic RMS 연산| SoundDb["소음 데시벨 추출"]
-        Main -.->|Raw Audio 데이터| Trash["로컬 메모리에서 즉시 파기 - Privacy 보호"]
+        Main -.->|Raw Audio 데이터| Trash([로컬 메모리에서 즉시 파기 - Privacy 보호])
         
         %% Local logging / offline flow
-        Main -->|로컬 백업| CSVLogger["DataLogger (local CSV)"]
+        Main -->|로컬 백업| CSVLogger[(DataLogger - local CSV)]
         Main -->|1차 로컬 연산| Proc["Acoustic & Occupancy 판정"]
     end
 
     %% 2. Messaging/Broker
     subgraph Messaging ["미들웨어 브릿지"]
-        Proc -->|MQTT Publish| Broker["MQTT Broker (localhost:1883)"]
+        Proc -->|MQTT Publish| Broker[[MQTT Broker - localhost:1883]]
         Broker -->|MQTT Subscribe| Bridge["mqtt_to_firebase.py"]
+        Bridge --> AuthCheck{"SDK 인증 성공 여부?"}
         
         %% Broker/Bridge connection fail fallback
-        Bridge -.->|MQTT 브로커 장애 시| Retry["재연결 백그라운드 무한 루프"]
+        Bridge -.->|MQTT 브로커 장애 시| Retry([재연결 백그라운드 무한 루프])
     end
 
     %% 3. Cloud / Database
     subgraph Cloud ["클라우드"]
         %% Firebase writing fallback
-        Bridge -->|경로 A: SDK 인증 성공| FirebaseSDK["Firebase Admin SDK"]
-        Bridge -.->|경로 B: SDK 인증 실패 - Fallback| FirebaseREST["HTTP REST API - PUT"]
+        AuthCheck -->|Yes| FirebaseSDK["Firebase Admin SDK"]
+        AuthCheck -->|No - Fallback| FirebaseREST["HTTP REST API - PUT"]
         
-        FirebaseSDK --> DB[("Firebase Realtime DB")]
+        FirebaseSDK --> DB[(Firebase Realtime DB)]
         FirebaseREST --> DB
     end
 
     %% 4. Client / User
     subgraph Client ["사용자 브라우저"]
-        Web["demo_dashboard.html (Web UI)"]
+        Web[/demo_dashboard.html - Web UI/]
         
         %% Subscription & Notification flow
         Web -->|1. WebSocket 구독 요청| DB
