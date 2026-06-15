@@ -179,7 +179,13 @@ def on_message(client, userdata, msg):
 
 # --- Main loop ---
 def main():
-    client = mqtt.Client()
+    # Compatibility with paho-mqtt v2.0+ which requires CallbackAPIVersion
+    try:
+        from paho.mqtt.enums import CallbackAPIVersion
+        client = mqtt.Client(CallbackAPIVersion.VERSION1)
+    except (ImportError, ValueError, AttributeError):
+        client = mqtt.Client()
+        
     client.on_connect = on_connect
     client.on_message = on_message
     

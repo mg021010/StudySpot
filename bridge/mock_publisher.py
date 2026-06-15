@@ -98,7 +98,13 @@ def generate_report(node_id):
     return report
 
 def main():
-    client = mqtt.Client()
+    # Compatibility with paho-mqtt v2.0+ which requires CallbackAPIVersion
+    try:
+        from paho.mqtt.enums import CallbackAPIVersion
+        client = mqtt.Client(CallbackAPIVersion.VERSION1)
+    except (ImportError, ValueError, AttributeError):
+        client = mqtt.Client()
+        
     try:
         client.connect(MQTT_BROKER, MQTT_PORT, 60)
         client.loop_start()
