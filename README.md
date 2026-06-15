@@ -117,13 +117,16 @@ mkdir build && cd build
 cmake ..
 make
 
-# 노드 기동
+# 노드 기동 (기본 설정으로 구동)
 ./StudySpot_Node
+
+# 동적 실행인자 지정 (Node ID와 Room Name 커스텀 기동)
+./StudySpot_Node RPI3-NODE-02 Library-Central-01
 ```
 
 ### 2. 미들웨어 데이터 브릿지 실행 (게이트웨이 서버 환경)
 ```bash
-# 라이브러리 의존성 설치
+# 라이브러리 의존성 설치 (paho-mqtt v1.x & v2.x 호환 지원)
 pip install paho-mqtt requests firebase-admin
 
 # 로컬 MQTT 브로커 서비스 기동 (예: Mosquitto)
