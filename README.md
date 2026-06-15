@@ -35,7 +35,7 @@ graph TD
     end
 
     subgraph Cloud ["클라우드"]
-        Bridge -->|HTTPS PUT (JSON)| Firebase[(Firebase Realtime DB)]
+        Bridge -->|HTTPS PUT JSON| Firebase[(Firebase Realtime DB)]
     end
 
     subgraph Frontend ["사용자 화면"]
