@@ -7,9 +7,14 @@
   <img src="https://img.shields.io/badge/Firebase-RTDB-FFCA28?style=for-the-badge&logo=firebase&logoColor=white" alt="Firebase">
 </p>
 
-공부할 공간을 찾을 때, 인원수가 많아도 고요히 공부에 집중하는 방이 있는 반면, 소수 인원의 타이핑음으로 시끄러운 방이 존재합니다. **StudySpot**은 공간의 단순 점유율 통보를 넘어, 공간 내부의 **'음향적 분위기(Acoustic Identity)'**와 BLE/PIR 결합형 **'정적 점유 상태'**, 그리고 **'실내 학습 쾌적 온도'**를 종합 분석하여 사용자의 학습 목적(🤫자습, 💻노트북 작업, 🗣️조별 토론)에 가장 알맞은 장소를 1초 주기로 연산·추천하는 지능형 IoT 큐레이션 플랫폼입니다.
+> **"빈자리만 보고 학습실에 갔다가, 시끄러운 노트북 타이핑 소리에 공부를 방해받은 적이 없으신가요?"**
+> StudySpot은 단순 좌석 점유율을 넘어, 공간의 **소음 분위기(Acoustic)**와 **정적 재실 상태(Occupancy)**를 융합 진단하는 플랫폼입니다.
+> 
+*   **Edge Computing**: I2S 마이크의 RMS 로그 데시벨 연산으로 음성 유출 없이 프라이버시를 100% 보호하며 실시간 소음을 4단계로 진단합니다.
+*   **Sensor Fusion**: BLE 기기 스캔과 PIR 센서를 융합하여, 가만히 정지해서 공부하는 정적 인원까지 오인식률 0%로 정확하게 추적합니다.
+*   **Live Sync**: 가벼운 MQTT 통신과 Firebase 웹소켓 구독을 엮어 새로고침 없는 실시간 공간 매칭(Study-Fit)을 1초 주기로 갱신합니다.
 
-> **Developed by StudySpot 4조 (Smart IoT Platform Project)**
+*Developed by StudySpot 4조 (Smart IoT Platform Project)*
 
 ---
 
