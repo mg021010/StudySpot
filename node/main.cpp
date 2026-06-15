@@ -26,15 +26,27 @@
 #include "services/MqttClient.hpp"
 #include "services/DataLogger.hpp"
 
-int main() {
+int main(int argc, char* argv[]) {
     std::cout << "===========================================" << std::endl;
     std::cout << "   CampusSpot Node: Acoustic & Occupancy   " << std::endl;
     std::cout << "   (Edge Computing & Distributed Mode)     " << std::endl;
     std::cout << "===========================================" << std::endl;
 
     // --- [CONFIG] Node Specific Identification ---
-    const std::string NODE_ID = "RPI3-NODE-01";
-    const std::string ROOM_NAME = "Library-Central-02";
+    std::string NODE_ID = "RPI3-NODE-01";
+    std::string ROOM_NAME = "Library-Central-02";
+
+    if (argc >= 3) {
+        NODE_ID = argv[1];
+        ROOM_NAME = argv[2];
+        std::cout << "[CONFIG] Using dynamic node settings from arguments:" << std::endl;
+        std::cout << "         Node ID   : " << NODE_ID << std::endl;
+        std::cout << "         Room Name : " << ROOM_NAME << std::endl;
+    } else {
+        std::cout << "[CONFIG] Using default configuration settings:" << std::endl;
+        std::cout << "         Node ID   : " << NODE_ID << std::endl;
+        std::cout << "         Room Name : " << ROOM_NAME << std::endl;
+    }
 
     // --- [STEP 1] Initialize Hardware Drivers ---
     auto dht = std::make_unique<DhtSensor>(4);    // DHT11 on GPIO 4
