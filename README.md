@@ -7,12 +7,12 @@
   <img src="https://img.shields.io/badge/Firebase-RTDB-FFCA28?style=for-the-badge&logo=firebase&logoColor=white" alt="Firebase">
 </p>
 
-> **"빈자리만 보고 학습실에 갔다가, 시끄러운 노트북 타이핑 소리에 공부를 방해받은 적이 없으신가요?"**
-> StudySpot은 단순 좌석 점유율을 넘어, 공간의 **소음 분위기(Acoustic)**와 **정적 재실 상태(Occupancy)**를 융합 진단하는 지능형 공간 큐레이션 플랫폼입니다.
+> **"학습실에 노트북 소음이 심한지, 혹은 가만히 앉아 공부하는 사람들로 꽉 찬 상태인지 미리 알 수 없을까?"**
+> StudySpot은 공간의 단순 점유율 조회를 넘어, 소음 분위기(Acoustic)와 정적 재실 여부(Occupancy)를 융합 진단하여 사용자 맞춤형 학습 공간을 매칭해주는 지능형 IoT 큐레이션 플랫폼입니다.
 > 
-*   **Edge Computing**: **I2S 마이크**의 RMS 실시간 로그 데시벨 변환 연산을 통해, **원형 음성 데이터 전송을 배제(Privacy-by-Design)**하며 소음을 4단계로 local 진단합니다.
-*   **Sensor Fusion**: **PIR 모션 센서**의 한계(정지 상태 감지 불능)를 **BLE 디바이스 스캔**과 융합 알고리즘으로 보완하여, **자습 인원 감지 유실률을 기존 42%에서 0%로 개선**했습니다.
-*   **Live Sync**: **MQTT** 프로토콜과 **Firebase RTDB 웹소켓**을 연결한 경량 데이터 파이프라인으로, **평균 1초 미만의 초저지연 실시간 공간 매칭(Study-Fit)**을 제공합니다.
+*   **Edge Computing**: 엣지 노드 단에서 실시간 음향 데이터를 데시벨로 자체 연산하여 음성 노출 없이 프라이버시를 보호합니다.
+*   **Sensor Fusion**: BLE 기기 스캔과 PIR 모션 감지를 결합하여 정지 상태의 자습 인원까지 정확하게 감지 및 추적합니다.
+*   **Live Sync**: MQTT와 Firebase 실시간 데이터베이스를 연동하여 새로고침 없는 웹소켓 기반의 실시간 공간 상태 정보를 제공합니다.
 
 *Developed by StudySpot 4조 (Smart IoT Platform Project) — **김민규 (엣지 노드 프로그래밍 & 미들웨어 설계)***
 
@@ -22,26 +22,56 @@
 
 라즈베리파이 엣지 노드에서 데이터를 정제 및 임계 연산한 뒤, 경량화된 JSON 페이로드만 Firebase 실시간 클라우드로 전송하는 미들웨어 파이프라인 구조입니다.
 
+### 🔌 시스템 아키텍처 다이어그램 (정상 수립 및 예외 대응 흐름)
+
 ```mermaid
 graph TD
-    subgraph Hardware ["엣지 노드 (라즈베리파이 3)"]
+    %% 1. Hardware/Edge Node
+    subgraph EdgeNode ["엣지 노드 (라즈베리파이 3)"]
         Sensors["DHT11, PIR, I2S Mic, BLE Chip"] -->|Raw Data| Main["main.cpp (Edge Loop)"]
-        Main -->|1차 로컬 연산| Proc["Acoustic & Occupancy 분류"]
+        
+        %% Audio data privacy flow
+        Main -->|Acoustic RMS 연산| SoundDb["소음 데시벨 추출"]
+        Main -.->|Raw Audio 데이터| Trash["로컬 메모리에서 즉시 파기 - Privacy 보호"]
+        
+        %% Local logging / offline flow
+        Main -->|로컬 백업| CSVLogger["DataLogger (local CSV)"]
+        Main -->|1차 로컬 연산| Proc["Acoustic & Occupancy 판정"]
     end
 
+    %% 2. Messaging/Broker
     subgraph Messaging ["미들웨어 브릿지"]
         Proc -->|MQTT Publish| Broker["MQTT Broker (localhost:1883)"]
         Broker -->|MQTT Subscribe| Bridge["mqtt_to_firebase.py"]
+        
+        %% Broker/Bridge connection fail fallback
+        Bridge -.->|MQTT 브로커 장애 시| Retry["재연결 백그라운드 무한 루프"]
     end
 
+    %% 3. Cloud / Database
     subgraph Cloud ["클라우드"]
-        Bridge -->|HTTPS PUT JSON| Firebase[(Firebase Realtime DB)]
+        %% Firebase writing fallback
+        Bridge -->|경로 A: SDK 인증 성공| FirebaseSDK["Firebase Admin SDK"]
+        Bridge -.->|경로 B: SDK 인증 실패 - Fallback| FirebaseREST["HTTP REST API - PUT"]
+        
+        FirebaseSDK --> DB[("Firebase Realtime DB")]
+        FirebaseREST --> DB
     end
 
-    subgraph Frontend ["사용자 화면"]
-        Firebase -->|WebSocket 구독 / 실시간 동기화| Web["demo_dashboard.html (Web UI)"]
+    %% 4. Client / User
+    subgraph Client ["사용자 브라우저"]
+        Web["demo_dashboard.html (Web UI)"]
+        
+        %% Subscription & Notification flow
+        Web -->|1. WebSocket 구독 요청| DB
+        DB -->|2. 실시간 동기화 알림 - Notification| Web
     end
 ```
+
+### 📊 핵심 엔지니어링 정량적 스펙 (Key Engineering Metrics)
+* **음성 정보 누출율 0% (Privacy-by-Design)**: 음성 Raw 원형 데이터를 네트워크로 전송하지 않고 로컬 버퍼 상에서 즉각 RMS 계산 후 즉시 파기하여 사생활 침해 원천 방지.
+* **정적 학습 인원 감지 신뢰도 개선**: PIR 센서의 한계(움직임이 없을 시 미감지)를 해결하고자 근접 BLE 스캔 데이터를 결합하는 융합 공식(Sensor Fusion) 적용, 학습실 내 자습자 재실 판정 유실률을 기존 **42%에서 0%로 대폭 경감**.
+* **평균 1초 주기의 초저지연 동기화 (Live Sync)**: MQTT 프로토콜과 Firebase WebSocket 데이터 실시간 리스너 바인딩을 통해 새로고침(F5) 없이 사용자의 브라우저 대시보드 화면을 매초 갱신.
 
 ---
 
