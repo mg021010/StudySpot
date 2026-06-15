@@ -28,32 +28,45 @@
 graph TD
     %% 1. Hardware/Edge Node
     subgraph EdgeNode ["엣지 노드 (라즈베리파이 3)"]
-        Sensors[/DHT11, PIR, I2S Mic, BLE Chip/] -->|Raw Data| Main["main.cpp (Edge Loop)"]
+        Sensors[/DHT11, PIR, I2S Mic, BLE Chip/] -->|Raw Data| Collector["[로컬 데이터 집계 및 스케줄러]"]
         
-        %% Audio data privacy flow
-        Main -->|Acoustic RMS 연산| SoundDb["소음 데시벨 추출"]
-        Main -.->|Raw Audio 데이터| Trash([로컬 메모리에서 즉시 파기 - Privacy 보호])
+        %% Audio data privacy decision
+        Collector --> AudioCheck{"음향 데이터인가?"}
+        AudioCheck -->|Yes - Privacy 보호| Trash([음성 원형 데이터 즉시 파기])
+        AudioCheck -->|No| TempHum["온도 습도 필터링"]
         
-        %% Local logging / offline flow
-        Main -->|로컬 백업| CSVLogger[(DataLogger - local CSV)]
-        Main -->|1차 로컬 연산| Proc["Acoustic & Occupancy 판정"]
+        %% Sound processing
+        Collector --> SoundProc["RMS 데시벨 스케일링 연산"]
+        
+        %% Sensor fusion decision
+        Collector --> OccupancyCheck{"모션 또는 디바이스 수 변화 감지?"}
+        OccupancyCheck -->|Yes - 상태 머신 작동| Fusion["PIR-BLE 융합 재실 판정"]
+        OccupancyCheck -->|No - 상태 유지| Hold["이전 상태 유지 및 쿨다운"]
+        
+        %% Output packet packaging
+        SoundProc --> Packager["[JSON 페이로드 패키징]"]
+        Fusion --> Packager
+        TempHum --> Packager
+        
+        Packager -->|로컬 백업| CSVLogger[(DataLogger - local CSV)]
     end
 
     %% 2. Messaging/Broker
     subgraph Messaging ["미들웨어 브릿지"]
-        Proc -->|MQTT Publish| Broker[[MQTT Broker - localhost:1883]]
+        Packager -->|MQTT Publish| Broker[[MQTT Broker - localhost:1883]]
         Broker -->|MQTT Subscribe| Bridge["mqtt_to_firebase.py"]
-        Bridge --> AuthCheck{"SDK 인증 성공 여부?"}
         
-        %% Broker/Bridge connection fail fallback
-        Bridge -.->|MQTT 브로커 장애 시| Retry([재연결 백그라운드 무한 루프])
+        %% MQTT Conn Decision
+        Bridge --> MqttCheck{"MQTT 브로커 연결 수립?"}
+        MqttCheck -->|No - connection error| Retry([재연결 백그라운드 무한 루프])
+        MqttCheck -->|Yes| AuthCheck{"인증키 json 파일 존재?"}
     end
 
     %% 3. Cloud / Database
     subgraph Cloud ["클라우드"]
         %% Firebase writing fallback
-        AuthCheck -->|Yes| FirebaseSDK["Firebase Admin SDK"]
-        AuthCheck -->|No - Fallback| FirebaseREST["HTTP REST API - PUT"]
+        AuthCheck -->|Yes - credential 유효| FirebaseSDK["Firebase Admin SDK"]
+        AuthCheck -->|No - Fallback 구동| FirebaseREST["HTTP REST API - PUT"]
         
         FirebaseSDK --> DB[(Firebase Realtime DB)]
         FirebaseREST --> DB
