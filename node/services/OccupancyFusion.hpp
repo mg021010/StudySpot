@@ -35,7 +35,7 @@ public:
      * @return OccupancyStatus The fused status.
      */
     OccupancyStatus process(bool motionDetected, float deviceCount) {
-        // 1. 움직임이 감지되면 쿨다운 타이머를 최대치(30초)로 충전
+        // 1. 움직임이 감지되면 쿨다운 타이머를 최대치(10초)로 충전
         if (motionDetected) {
             motionCooldown = COOLDOWN_LIMIT;
         } else if (motionCooldown > 0) {
@@ -50,7 +50,7 @@ public:
         float adjustedCount = deviceCount - BASELINE_WEIGHT;
         if (adjustedCount < 0.0f) adjustedCount = 0.0f;
 
-        // 3. 최근 30초간 전혀 움직임이 없었고 기기도 없다면 Vacant
+        // 3. 최근 10초간 전혀 움직임이 없었고 기기도 없다면 Vacant
         if (adjustedCount < 0.5f && motionCooldown == 0) {
             return OccupancyStatus::VACANT;
         }
@@ -60,7 +60,7 @@ public:
         if (isDynamic) {
             return isHighDensity ? OccupancyStatus::DYNAMIC_HIGH : OccupancyStatus::DYNAMIC_LOW;
         } else {
-            // 이 상태에서는 최근 30초간 활발한 동작 밀도가 기준 이하이므로 정적(Static)으로 분류
+            // 이 상태에서는 최근 10초간 활발한 동작 밀도가 기준 이하이므로 정적(Static)으로 분류
             return isHighDensity ? OccupancyStatus::STATIC_HIGH : OccupancyStatus::STATIC_LOW;
         }
     }
