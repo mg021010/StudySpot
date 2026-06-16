@@ -1,4 +1,4 @@
-# 🏫 StudySpot: 실시간 다중 센서 융합 기반 공간 큐레이션 플랫폼
+#  StudySpot: 실시간 다중 센서 융합 기반 공간 큐레이션 플랫폼
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Raspberry%20Pi-C8102E?style=for-the-badge&logo=raspberry-pi&logoColor=white" alt="Platform">
@@ -22,7 +22,7 @@
 
 라즈베리파이 엣지 노드에서 데이터를 정제 및 임계 연산한 뒤, 경량화된 JSON 페이로드만 Firebase 실시간 클라우드로 전송하는 미들웨어 파이프라인 구조입니다.
 
-### 🔌 시스템 아키텍처 다이어그램 (정상 수립 및 예외 대응 흐름)
+###  시스템 아키텍처 다이어그램 (정상 수립 및 예외 대응 흐름)
 
 ```mermaid
 graph TD
@@ -82,14 +82,14 @@ graph TD
     end
 ```
 
-### 📊 핵심 엔지니어링 정량적 스펙 (Key Engineering Metrics)
+###  핵심 엔지니어링 정량적 스펙 (Key Engineering Metrics)
 * **음성 정보 누출율 0% (Privacy-by-Design)**: 음성 Raw 원형 데이터를 네트워크로 전송하지 않고 로컬 버퍼 상에서 즉각 RMS 계산 후 즉시 파기하여 사생활 침해 원천 방지.
 * **정적 학습 인원 감지 신뢰도 개선**: PIR 센서의 한계(움직임이 없을 시 미감지)를 해결하고자 근접 BLE 스캔 데이터를 결합하는 융합 공식(Sensor Fusion) 적용, 학습실 내 자습자 재실 판정 유실률을 기존 **42%에서 0%로 대폭 경감**.
 * **평균 1초 주기의 초저지연 동기화 (Live Sync)**: MQTT 프로토콜과 Firebase WebSocket 데이터 실시간 리스너 바인딩을 통해 새로고침(F5) 없이 사용자의 브라우저 대시보드 화면을 매초 갱신.
 
 ---
 
-## ⚖️ 2. 기술 의사결정 (Tech Trade-off)
+##  2. 기술 의사결정 (Tech Trade-off)
 
 프로젝트 설계 및 컴파일 과정에서 도출된 주요 기술적 고민과 대안별 의사결정 결과 분석 내용입니다.
 
@@ -137,29 +137,29 @@ graph TD
 
 ---
 
-## 💻 3. 직무별 핵심 기술 증거 (Code Evidence)
+##  3. 직무별 핵심 기술 증거 (Code Evidence)
 
 현업 테크 리더의 검증을 통과하기 위해, 본 프로젝트의 핵심 알고리즘이 작성된 소스 코드 파일의 절대 경로와 주요 라인을 매핑하여 증명합니다.
 
-### 🔌 [Embedded C++] 엣지 컴퓨팅 및 센서 융합
+###  [Embedded C++] 엣지 컴퓨팅 및 센서 융합
 *   **음향 분위기 데시벨(dB) 스케일링 공식**
     *   [SoundSensor.hpp (L60-70)](file:///c:/Users/mg021/StudySpot/node/drivers/SoundSensor.hpp#L60-L70): 마이크 센서 RMS 값을 상용 로그 스케일로 변환하여 30~60dB 수준의 현실적인 척도로 정규화 가공하는 연산 처리부.
 *   **정적/동적 다중 점유 필터링 로직**
     *   [OccupancyFusion.hpp (L40-80)](file:///c:/Users/mg021/StudySpot/node/services/OccupancyFusion.hpp#L40-L80): BLE 디바이스 수와 PIR 감지 누적 이력을 기반으로 정적 밀집 상태(`Static High`)를 최종 판단하는 임계치 로직.
 
-### 🐍 [Middleware & Cloud] 데이터 수집 및 Fallback 연동
+###  [Middleware & Cloud] 데이터 수집 및 Fallback 연동
 *   **보안키 부재 시 REST API 자동 폴백 및 연동**
     *   [mqtt_to_firebase.py (L98-L109)](file:///c:/Users/mg021/StudySpot/bridge/mqtt_to_firebase.py#L98-L109): Admin SDK 인증 토큰 파일이 없는 환경에서도 브라우저 연동에 영향이 없도록 HTTP REST PUT 방식의 Fallback 동작으로 전송 신뢰성을 보장하는 방어 코드.
 
-### 🎨 [Frontend] 부드러운 순위 정렬 및 실시간 렌더링 스무딩
+###  [Frontend] 부드러운 순위 정렬 및 실시간 렌더링 스무딩
 *   **지수이동평균(EMA) 필터를 적용한 점수 변화 감쇄**
     *   [demo_dashboard.html (L1064-L1073)](file:///c:/Users/mg021/StudySpot/demo_dashboard.html#L1064-L1073): 실시간 데이터 수신 시 추천율 점수가 초단위로 급변해 튀어 보이는 현상을 막기 위해 감쇄율($lpha = 0.08 \sim 0.25$)의 지수이동평균을 얹어 부드럽게 점수 카드 애니메이션이 동작하도록 설계.
 
 ---
 
-## 🏃 4. 트러블슈팅 기록 (STAR Framework)
+##  4. 트러블슈팅 기록 (STAR Framework)
 
-### 🚨 PIR 센서의 한계 극복을 통한 '가공의 빈방' 오판율 Zero화
+###  PIR 센서의 한계 극복을 통한 '가공의 빈방' 오판율 Zero화
 
 *   **Situation (상황)**
     *   학습실 추천의 핵심은 '사람이 꽉 찬 조용한 방'과 '비어 있는 고요한 방'을 구분하는 것입니다. 그러나 열적 움직임을 잡는 PIR 센서는 자리에 가만히 정지해서 공부에 몰입 중인 학생을 감지하지 못해, 자습실에 이용자가 가득 차 있음에도 빈 방(`Vacant`)으로 오판하여 타 학생들을 자습실로 유도해 혼잡을 초래하는 피드백 루프 오류가 발생했습니다.
@@ -173,7 +173,7 @@ graph TD
 
 ---
 
-## 🛠 5. 엣지 하드웨어 회로 구성 (Raspberry Pi 3)
+##  5. 엣지 하드웨어 회로 구성 (Raspberry Pi 3)
 
 | 센서 구분 | 센서 모델명 | 핀 맵핑 구성 (Connection) | 엣지 컴퓨팅 local 역할 |
 | :--- | :--- | :--- | :--- |
@@ -184,7 +184,7 @@ graph TD
 
 ---
 
-## ⚙️ 6. 시작 및 빌드 가이드 (Getting Started)
+##  6. 시작 및 빌드 가이드 (Getting Started)
 
 ### 6.1 최소 실행 환경 (Prerequisites)
 * **하드웨어 (운영 노드)**: Raspberry Pi 3 (또는 Debian 계열 리눅스 SBC), INMP441 마이크, HC-SR501 PIR 센서, DHT11 센서.
@@ -220,7 +220,7 @@ graph TD
 
 ### 6.4 개발(Simulation) 모드 vs 운영(Production) 모드 구동 절차
 
-#### 💻 [개발 모드] 하드웨어 없이 데이터 파이프라인 가상 테스트
+####  [개발 모드] 하드웨어 없이 데이터 파이프라인 가상 테스트
 로컬 PC 환경에서 MQTT와 파이썬 모의 데이터를 이용해 전체 동작을 실시간 검증합니다.
 1. **로컬 MQTT 브로커 가동** (예: Mosquitto):
    ```bash
@@ -238,7 +238,7 @@ graph TD
    ```
 4. **대시보드 기동**: [demo_dashboard.html](file:///c:/Users/mg021/StudySpot/demo_dashboard.html) 실행 후 실시간 토글을 켜면 로컬 시뮬레이션 데이터를 동기화합니다.
 
-#### 📡 [운영 모드] 실제 라즈베리파이 및 물리 센서 수집망 가동
+####  [운영 모드] 실제 라즈베리파이 및 물리 센서 수집망 가동
 실제 하드웨어를 컴파일하여 구동하고 클라우드 데이터베이스에 실시간 적재합니다.
 1. **임베디드 C++ 엣지 노드 빌드 및 구동**:
    ```bash
@@ -272,9 +272,9 @@ gcov node/test_logic.cpp
 
 ---
 
-### 🚨 7. 문제 해결 가이드 (Troubleshooting)
+###  6.6 문제 해결 가이드 (Troubleshooting)
 
-#### 7.1 의존성 및 라이브러리 충돌/버전 오류 (Dependency & Version Conflicts)
+#### 6.6.1 의존성 및 라이브러리 충돌/버전 오류 (Dependency & Version Conflicts)
 * **Q1. 파이썬 `paho-mqtt` 버전 관련 에러 (`ValueError: callback_api_version...`) 또는 타 라이브러리와 버전이 충돌합니다.**
   * **A1**: 파이썬 환경의 전역 패키지 충돌을 방지하기 위해 가상환경(`venv`) 사용을 강력히 권장합니다. 본 프로젝트의 파이썬 중계기 및 테스트 스크립트는 `paho-mqtt` v1.x 및 최신 v2.0+ 버전 양쪽 모두에서 호환되도록 자동 폴백 코드가 적용되어 있으나, 가상환경 내에서 독립적으로 패키지를 가동하는 것이 가장 안전합니다.
     ```bash
@@ -299,7 +299,7 @@ gcov node/test_logic.cpp
     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 80 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     ```
 
-#### 7.2 노드(Node) - 미들웨어/서버 간 연결 실패 (Node-to-Server Connection)
+#### 6.6.2 노드(Node) - 미들웨어/서버 간 연결 실패 (Node-to-Server Connection)
 * **Q1. 엣지 노드가 MQTT Broker로 메시지를 발행(Publish)하지 못합니다 (연결 끊김 / 오프라인 지속).**
   * **A1**: 
     1. **브로커 기동 상태 점검**: 게이트웨이 서버의 MQTT Broker(기본 포트 1883) 서비스 구동 상태를 점검하십시오: `sudo systemctl status mosquitto`.
@@ -310,13 +310,13 @@ gcov node/test_logic.cpp
     1. **비인증 REST API 규칙**: 인증키 파일이 없는 환경에서 작동할 경우 Firebase Realtime Database의 규칙(Rules) 탭에서 쓰기 권한이 허용되어야 합니다: `{ "rules": { ".read": true, ".write": true } }`.
     2. **데이터베이스 호스트 URL 검증**: `FIREBASE_DB_URL` 환경변수 또는 파이썬 스크립트 상의 데이터베이스 주소가 올바른 엔드포인트 형식(`https://[project-id]-default-rtdb.firebaseio.com/`)으로 기입되었는지, 오타가 없는지 재확인하십시오.
 
-#### 7.3 서버(Firebase) - 사용자(Web UI) 간 동기화 실패 (Server-to-User Sync)
+#### 6.6.3 서버(Firebase) - 사용자(Web UI) 간 동기화 실패 (Server-to-User Sync)
 * **Q1. 대시보드 화면(`demo_dashboard.html`)을 켰으나 우측 상단 라이브 활성화 시 DB 연결 실패 에러가 발생하거나 데이터 갱신이 되지 않습니다.**
   * **A1**: 
     1. **DB 주소 접미사 오류**: 대시보드 입력 필드에 적은 Firebase DB 주소 끝에 불필요한 슬래시(`/`)나 특정 경로가 포함되어 있으면 WebSocket 핸드셰이크에 실패할 수 있습니다. 슬래시를 제외한 도메인 엔드포인트 형태만 정확히 적으십시오.
     2. **네트워크 보안/광고 차단 확장 프로그램**: 브라우저의 일부 광고 차단 플러그인 또는 방화벽 정책이 실시간 클라우드 소켓 도메인(`*.firebaseio.com`)의 통신을 차단할 수 있습니다. 시크릿 모드 또는 다른 브라우저에서 실행해 보십시오.
 
-#### 7.4 C++ 및 OS 하드웨어 레벨 실행 오류 (Low-level Runtime & Hardware)
+#### 6.6.4 C++ 및 OS 하드웨어 레벨 실행 오류 (Low-level Runtime & Hardware)
 * **Q1. C++ 엣지 노드 실행 시 ALSA 오디오 디바이스를 오픈할 수 없다고 나옵니다.**
   * **A1**: `SoundSensor.hpp`는 기본값으로 `"plughw:1,0"` 오디오 카드를 마이크 장치로 오픈합니다. RPi 환경에서 `arecord -l` 명령을 실행하여 마이크의 카드/디바이스 번호를 확인하고 생성자 인자값을 변경하십시오. 또한 오디오 권한 그룹에 계정을 추가해야 합니다: `sudo usermod -aG audio $USER` 후 재부팅하십시오.
 * **Q2. Bluetooth 스캔 기동 시 HCI Socket 오픈 실패 (Permission Denied) 에러가 발생합니다.**
