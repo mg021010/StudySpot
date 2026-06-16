@@ -18,7 +18,7 @@
 
 ---
 
-## 📡 1. 서비스 아키텍처 및 데이터 흐름
+##  1. 서비스 아키텍처 및 데이터 흐름
 
 라즈베리파이 엣지 노드에서 데이터를 정제 및 임계 연산한 뒤, 경량화된 JSON 페이로드만 Firebase 실시간 클라우드로 전송하는 미들웨어 파이프라인 구조입니다.
 
@@ -184,9 +184,9 @@ graph TD
 
 ---
 
-## ⚙️ 6. 시작 및 빌드 가이드 (Getting Started)
+##  6. 시작 및 빌드 가이드 (Getting Started)
 
-### 🚀 3분 퀵스타트 (다운로드 후 즉시 시뮬레이션 실행 가이드)
+###  3분 퀵스타트 (다운로드 후 즉시 시뮬레이션 실행 가이드)
 라즈베리파이 하드웨어가 없더라도, 로컬 PC에서 다음 5단계 명령어를 통해 즉시 전체 데이터 수집 파이프라인 시뮬레이션을 실행하고 대시보드를 구동할 수 있습니다.
 
 #### 1. 저장소 복제 및 이동
@@ -243,19 +243,19 @@ pip install paho-mqtt requests
 
 ### 6.2 필수 패키지 및 라이브러리 설치
 
-#### 🔌 C++ 임베디드 노드 라이브러리 목록 (라즈베리파이/Linux 환경)
+####  C++ 임베디드 노드 라이브러리 목록 (라즈베리파이/Linux 환경)
 * **CMake 3.10+ & GCC 8+**: C++17 프로젝트 빌드 및 컴파일용 시스템 유틸리티.
 * **ALSA (Advanced Linux Sound Architecture) 개발 라이브러리**: 마이크 음향 신호 수집 제어용 ([ALSA 공식 다운로드 페이지](https://www.alsa-project.org/wiki/Download) / [ALSA lib 소스 코드 GitHub](https://github.com/alsa-project/alsa-lib)).
 * **BlueZ (Bluetooth Linux Stack) 개발 라이브러리**: 내장 블루투스 칩셋의 로우 레벨 HCI 소켓 스캔 기능용 ([BlueZ 공식 다운로드/소스 아카이브](https://www.kernel.org/pub/linux/bluetooth/) / [BlueZ 소스 코드 GitHub](https://github.com/bluez/bluez)).
 * **Eclipse Paho MQTT C/C++ Client**: 초경량 퍼블리싱 메시징 전송용 ([Paho C 설치 가이드](https://github.com/eclipse/paho.mqtt.c#installation) / [Paho C++ 소스 빌드 가이드](https://github.com/eclipse/paho.mqtt.cpp#building-from-source)).
 
-##### 📥 패키지 매니저로 초간단 자동 설치:
+#####  패키지 매니저로 초간단 자동 설치:
 ```bash
 sudo apt-get update
 sudo apt-get install -y cmake g++ libasound2-dev libbluetooth-dev libpaho-mqtt-dev libpaho-mqttcpp-dev
 ```
 
-##### 📥 패키지가 없는 환경을 위한 소스 코드 직접 빌드 및 설치 가이드 (Alternative Source Compilation):
+#####  패키지가 없는 환경을 위한 소스 코드 직접 빌드 및 설치 가이드 (Alternative Source Compilation):
 ```bash
 # 1. Paho MQTT C 라이브러리 빌드 및 설치
 git clone https://github.com/eclipse/paho.mqtt.c.git
@@ -274,12 +274,12 @@ sudo ldconfig && cd ..
 
 ---
 
-#### 🐍 미들웨어 브릿지 라이브러리 목록 (Python 3 환경)
+####  미들웨어 브릿지 라이브러리 목록 (Python 3 환경)
 * **paho-mqtt**: 파이썬 환경의 MQTT 메시지 구독 패키지 ([paho-mqtt PyPI 링크](https://pypi.org/project/paho-mqtt/)).
 * **requests**: Firebase RTDB REST API 전송(Fallback용) HTTP 라이브러리 ([requests PyPI 링크](https://pypi.org/project/requests/)).
 * **firebase-admin**: Firebase RTDB SDK 연동용 라이브러리 ([firebase-admin PyPI 링크](https://pypi.org/project/firebase-admin/)).
 
-##### 📥 패키지 설치:
+#####  패키지 설치:
 ```bash
 pip install paho-mqtt requests firebase-admin
 ```
