@@ -184,7 +184,57 @@ graph TD
 
 ---
 
-##  6. 시작 및 빌드 가이드 (Getting Started)
+## ⚙️ 6. 시작 및 빌드 가이드 (Getting Started)
+
+### 🚀 3분 퀵스타트 (다운로드 후 즉시 시뮬레이션 실행 가이드)
+라즈베리파이 하드웨어가 없더라도, 로컬 PC에서 다음 5단계 명령어를 통해 즉시 전체 데이터 수집 파이프라인 시뮬레이션을 실행하고 대시보드를 구동할 수 있습니다.
+
+#### 1. 저장소 복제 및 이동
+```bash
+git clone https://github.com/mg021010/StudySpot.git
+cd StudySpot
+```
+
+#### 2. 로컬 MQTT Broker(Mosquitto) 설치 및 시작
+* **macOS**: [Homebrew 패키지 관리자](https://brew.sh/)를 통해 설치 후 서비스 구동:
+  ```bash
+  brew install mosquitto
+  brew services start mosquitto
+  ```
+* **Ubuntu/Linux**: 패키지 매니저로 설치 후 시스템 서비스 기동:
+  ```bash
+  sudo apt-get update && sudo apt-get install -y mosquitto
+  sudo systemctl start mosquitto
+  ```
+* **Windows**: [Mosquitto 공식 Windows 다운로드 페이지](https://mosquitto.org/download/)에서 설치 프로그램을 다운로드 및 설치한 후, 윈도우 서비스 관리자에서 `Mosquitto Broker`를 시작으로 토글합니다.
+
+#### 3. 파이썬 가상환경 구축 및 의존성 설치
+```bash
+# 가상환경 활성화
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# 의존성 라이브러리 설치
+pip install paho-mqtt requests
+```
+
+#### 4. 데이터 중계 브릿지 및 모의 노드 발행기 실행
+* **터미널 1 (중계 브릿지 구동)**:
+  ```bash
+  python bridge/mqtt_to_firebase.py
+  ```
+* **터미널 2 (가상 센서 스트리머 구동)**:
+  *(반드시 가상환경이 활성화된 상태에서 실행)*
+  ```bash
+  python bridge/mock_publisher.py
+  ```
+
+#### 5. 실시간 프론트엔드 대시보드 화면 확인
+1. 웹 브라우저로 프로젝트 내 [demo_dashboard.html](file:///c:/Users/mg021/StudySpot/demo_dashboard.html) 파일을 직접 더블클릭하여 엽니다.
+2. 대시보드 화면이 열리면 우측 상단의 **[실시간 라이브 연결 (Firebase)]** 스위치를 **ON**으로 켭니다.
+3. 1초 간격으로 가상 센서가 생성한 데이터가 MQTT ➡️ 파이썬 브릿지 ➡️ Firebase ➡️ 웹 UI 순서로 흘러들어가며 정렬 및 추천이 실시간 작동하는 장관을 바로 볼 수 있습니다.
+
+---
 
 ### 6.1 최소 실행 환경 (Prerequisites)
 * **하드웨어 (운영 노드)**: Raspberry Pi 3 (또는 Debian 계열 리눅스 SBC), INMP441 마이크, HC-SR501 PIR 센서, DHT11 센서.
