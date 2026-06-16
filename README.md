@@ -274,10 +274,51 @@ gcov node/test_logic.cpp
 
 ### 🚨 7. 문제 해결 가이드 (Troubleshooting)
 
+#### 7.1 의존성 및 라이브러리 충돌/버전 오류 (Dependency & Version Conflicts)
+* **Q1. 파이썬 `paho-mqtt` 버전 관련 에러 (`ValueError: callback_api_version...`) 또는 타 라이브러리와 버전이 충돌합니다.**
+  * **A1**: 파이썬 환경의 전역 패키지 충돌을 방지하기 위해 가상환경(`venv`) 사용을 강력히 권장합니다. 본 프로젝트의 파이썬 중계기 및 테스트 스크립트는 `paho-mqtt` v1.x 및 최신 v2.0+ 버전 양쪽 모두에서 호환되도록 자동 폴백 코드가 적용되어 있으나, 가상환경 내에서 독립적으로 패키지를 가동하는 것이 가장 안전합니다.
+    ```bash
+    # 가상환경 구성 및 패키지 격리 설치
+    python -m venv .venv
+    source .venv/bin/activate  # Windows: .venv\Scripts\activate
+    pip install --upgrade pip
+    pip install paho-mqtt requests firebase-admin
+    ```
+* **Q2. C++ 소스 컴파일 시 `CMake Error` 또는 paho-mqtt C/C++ 링킹 오류가 발생합니다.**
+  * **A2**: Paho MQTT C 라이브러리가 먼저 깔린 뒤 C++ Wrapper 라이브러리가 설치되어야 정상 링크됩니다. 설치 순서가 꼬였거나 기존 시스템에 빌드된 paho 라이브러리와 버전 충돌이 나면 컴파일 에러가 발생합니다. 기존 수동 설치 잔재를 지운 후 패키지 관리자로 라이브러리를 통일하여 재설치하세요:
+    ```bash
+    # 기존 충돌 가능성 있는 라이브러리 제거 후 재설치
+    sudo apt-get purge -y libpaho-mqtt-dev libpaho-mqttcpp-dev
+    sudo apt-get install -y libpaho-mqtt-dev libpaho-mqttcpp-dev
+    ```
+* **Q3. 구버전 GCC 컴파일러 환경에서 C++17 빌드가 불가능하다고 나옵니다.**
+  * **A3**: `main.cpp` 및 드라이버 코드는 C++17 표준 문법(`std::make_unique`, `std::atomic` 등)을 사용합니다. 라즈베리파이 OS의 기본 컴파일러 버전이 낮다면 업데이트가 필요합니다. GCC 8 버전 이상을 활성화한 후 CMake 파일에서 `-std=c++17` 옵션을 활성화하십시오.
+    ```bash
+    # GCC 컴파일러 업데이트
+    sudo apt-get install -y gcc-8 g++-8
+    sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 80 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+    ```
+
+#### 7.2 노드(Node) - 미들웨어/서버 간 연결 실패 (Node-to-Server Connection)
+* **Q1. 엣지 노드가 MQTT Broker로 메시지를 발행(Publish)하지 못합니다 (연결 끊김 / 오프라인 지속).**
+  * **A1**: 
+    1. **브로커 기동 상태 점검**: 게이트웨이 서버의 MQTT Broker(기본 포트 1883) 서비스 구동 상태를 점검하십시오: `sudo systemctl status mosquitto`.
+    2. **방화벽 설정**: 서버와 노드가 다른 기기일 경우 방화벽에 의해 1883 포트가 차단되어 있을 수 있습니다. `sudo ufw allow 1883`을 통해 포트를 허용하십시오.
+    3. **Broker IP 설정**: `node/main.cpp` 혹은 `MqttClient.hpp`에 기재된 MQTT 호스트 IP 주소가 라즈베리파이가 접근 가능한 게이트웨이 서버의 로컬 IP(예: `192.168.x.x`)로 올바르게 설정되어 있는지 체크하십시오.
+* **Q2. 미들웨어 브릿지(`mqtt_to_firebase.py`)가 Firebase RTDB로 전송 실패를 출력합니다.**
+  * **A2**: 
+    1. **비인증 REST API 규칙**: 인증키 파일이 없는 환경에서 작동할 경우 Firebase Realtime Database의 규칙(Rules) 탭에서 쓰기 권한이 허용되어야 합니다: `{ "rules": { ".read": true, ".write": true } }`.
+    2. **데이터베이스 호스트 URL 검증**: `FIREBASE_DB_URL` 환경변수 또는 파이썬 스크립트 상의 데이터베이스 주소가 올바른 엔드포인트 형식(`https://[project-id]-default-rtdb.firebaseio.com/`)으로 기입되었는지, 오타가 없는지 재확인하십시오.
+
+#### 7.3 서버(Firebase) - 사용자(Web UI) 간 동기화 실패 (Server-to-User Sync)
+* **Q1. 대시보드 화면(`demo_dashboard.html`)을 켰으나 우측 상단 라이브 활성화 시 DB 연결 실패 에러가 발생하거나 데이터 갱신이 되지 않습니다.**
+  * **A1**: 
+    1. **DB 주소 접미사 오류**: 대시보드 입력 필드에 적은 Firebase DB 주소 끝에 불필요한 슬래시(`/`)나 특정 경로가 포함되어 있으면 WebSocket 핸드셰이크에 실패할 수 있습니다. 슬래시를 제외한 도메인 엔드포인트 형태만 정확히 적으십시오.
+    2. **네트워크 보안/광고 차단 확장 프로그램**: 브라우저의 일부 광고 차단 플러그인 또는 방화벽 정책이 실시간 클라우드 소켓 도메인(`*.firebaseio.com`)의 통신을 차단할 수 있습니다. 시크릿 모드 또는 다른 브라우저에서 실행해 보십시오.
+
+#### 7.4 C++ 및 OS 하드웨어 레벨 실행 오류 (Low-level Runtime & Hardware)
 * **Q1. C++ 엣지 노드 실행 시 ALSA 오디오 디바이스를 오픈할 수 없다고 나옵니다.**
-  * **A1**: [SoundSensor.hpp](file:///c:/Users/mg021/StudySpot/node/drivers/SoundSensor.hpp)는 기본값으로 `"plughw:1,0"` 오디오 카드를 마이크 장치로 오픈합니다. RPi 환경에서 `arecord -l` 명령을 실행하여 마이크의 카드/디바이스 번호를 확인하고 생성자 인자값을 변경하세요. 또한 오디오 권한 그룹에 계정을 추가해야 합니다: `sudo usermod -aG audio $USER`.
+  * **A1**: `SoundSensor.hpp`는 기본값으로 `"plughw:1,0"` 오디오 카드를 마이크 장치로 오픈합니다. RPi 환경에서 `arecord -l` 명령을 실행하여 마이크의 카드/디바이스 번호를 확인하고 생성자 인자값을 변경하십시오. 또한 오디오 권한 그룹에 계정을 추가해야 합니다: `sudo usermod -aG audio $USER` 후 재부팅하십시오.
 * **Q2. Bluetooth 스캔 기동 시 HCI Socket 오픈 실패 (Permission Denied) 에러가 발생합니다.**
-  * **A2**: BLE 소켓의 로우(Raw) 제어 권한은 root 권한이 필요합니다. 실행 시 `sudo ./StudySpot_Node` 로 구동하거나, 다음 명령어로 컴파일 바이너리에 소켓 권한을 직접 캡(Cap)을 설정하세요:
+  * **A2**: BLE 소켓의 로우(Raw) 제어 권한은 root 권한이 필요합니다. 실행 시 `sudo ./StudySpot_Node` 로 구동하거나, 다음 명령어로 컴파일 바이너리에 소켓 권한을 직접 캡(Cap)을 설정하십시오:
     `sudo setcap 'cap_net_raw,cap_net_admin+eip' ./StudySpot_Node`.
-* **Q3. Firebase 연동 시 REST API 전송은 성공했으나 화면에 데이터가 갱신되지 않습니다.**
-  * **A3**: Firebase Realtime DB의 보안 규칙(`.read`, `.write`)을 `true`로 설정했는지 점검하세요. 또한 프론트 대시보드 하단 입력 폼에 기재한 DB 주소 뒤에 불필요한 슬래시나 파라미터가 붙었는지 점검이 필요합니다.
