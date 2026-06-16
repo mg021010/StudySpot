@@ -186,37 +186,98 @@ graph TD
 
 ## ⚙️ 6. 시작 및 빌드 가이드 (Getting Started)
 
-### 1. 임베디드 엣지 노드 빌드 (라즈베리파이 환경)
+### 6.1 최소 실행 환경 (Prerequisites)
+* **하드웨어 (운영 노드)**: Raspberry Pi 3 (또는 Debian 계열 리눅스 SBC), INMP441 마이크, HC-SR501 PIR 센서, DHT11 센서.
+* **하드웨어 (개발/테스트)**: x86/64 PC 환경 (Windows / macOS / Linux) - *하드웨어 없이 모의 시뮬레이션 가능.*
+* **OS & 컴파일러**: 리눅스 데비안 계열 (Raspberry Pi OS 등), GCC 8+ (C++17 표준 지원), CMake 3.10+, Python 3.6+, 최신 웹 브라우저.
+
+### 6.2 필수 패키지 및 라이브러리 설치
+* **임베디드 노드 의존성 (Linux 환경)**:
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y cmake g++ libpaho-mqtt-dev libpaho-mqttcpp-dev libasound2-dev libbluetooth-dev
+  ```
+* **미들웨어 브릿지 의존성 (Python 환경)**:
+  ```bash
+  pip install paho-mqtt requests firebase-admin
+  ```
+
+### 6.3 필수 샘플 파일 구성 (Firebase Credential)
+실제 클라우드로 데이터 전송(운영 모드) 시 비공개 키가 필요합니다. `bridge/serviceAccountKey.json` 파일을 아래 양식과 같이 수동 생성해 주셔야 합니다.
+```json
+{
+  "type": "service_account",
+  "project_id": "your-firebase-project-id",
+  "private_key_id": "your-private-key-id",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...",
+  "client_email": "firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com",
+  "client_id": "your-client-id"
+}
+```
+*※ 키 파일이 부재한 테스트 환경에서는 브릿지가 자동으로 **HTTP REST API 모드로 작동 방식이 폴백(Fallback)**되므로 안심하고 진행하셔도 좋습니다. (단, Firebase DB 규칙이 `.write: true`로 열려있어야 전송 가능)*
+
+---
+
+### 6.4 개발(Simulation) 모드 vs 운영(Production) 모드 구동 절차
+
+#### 💻 [개발 모드] 하드웨어 없이 데이터 파이프라인 가상 테스트
+로컬 PC 환경에서 MQTT와 파이썬 모의 데이터를 이용해 전체 동작을 실시간 검증합니다.
+1. **로컬 MQTT 브로커 가동** (예: Mosquitto):
+   ```bash
+   # Linux/macOS
+   sudo systemctl start mosquitto
+   # Windows는 다운로드받은 Mosquitto 실행파일 구동
+   ```
+2. **미들웨어 데이터 브릿지 구동** (`FIREBASE_DB_URL` 환경변수로 주입 가능):
+   ```bash
+   python bridge/mqtt_to_firebase.py
+   ```
+3. **가상 센서 노드 스트리머 실행** (엣지 패킷 실시간 생성):
+   ```bash
+   python bridge/mock_publisher.py
+   ```
+4. **대시보드 기동**: [demo_dashboard.html](file:///c:/Users/mg021/StudySpot/demo_dashboard.html) 실행 후 실시간 토글을 켜면 로컬 시뮬레이션 데이터를 동기화합니다.
+
+#### 📡 [운영 모드] 실제 라즈베리파이 및 물리 센서 수집망 가동
+실제 하드웨어를 컴파일하여 구동하고 클라우드 데이터베이스에 실시간 적재합니다.
+1. **임베디드 C++ 엣지 노드 빌드 및 구동**:
+   ```bash
+   cd node
+   mkdir build && cd build
+   cmake .. && make
+   
+   # 실행 인자를 생략하면 기본값으로 실행됩니다.
+   ./StudySpot_Node
+   
+   # 또는 실행인자 지정 구동: ./StudySpot_Node [NodeID] [RoomName]
+   ./StudySpot_Node RPI3-NODE-02 Library-Central-01
+   ```
+2. **미들웨어 브릿지 및 MQTT Broker 가동**: 개발 모드와 동일하게 `mqtt_to_firebase.py` 구동.
+3. **사용자 실서비스 동기화**: [demo_dashboard.html](file:///c:/Users/mg021/StudySpot/demo_dashboard.html) 우측 상단 **[실시간 라이브 연결]** 스위치를 활성화하고, 하단에 Firebase RTDB URL을 적어 웹소켓 통지를 실시간 수신합니다.
+
+---
+
+### 6.5 테스트 코드 빌드 및 커버리지 확인
+엣지 로직의 신뢰도 증명을 위해 C++로 작성된 유닛 테스트 코드([test_logic.cpp](file:///c:/Users/mg021/StudySpot/node/test_logic.cpp))를 컴파일하고 테스트 커버리지를 보고합니다.
 ```bash
-# 의존 Paho MQTT C++ 라이브러리 및 CMake 설치
-sudo apt-get install libpaho-mqtt-dev libpaho-mqttcpp-dev cmake
+# 1. 아카이브 커버리지 측정 옵션을 포함하여 테스트 빌드
+g++ -std=c++17 -fprofile-arcs -ftest-coverage node/test_logic.cpp -o test_runner
 
-# 엣지 소스 컴파일
-cd node
-mkdir build && cd build
-cmake ..
-make
+# 2. 테스트 러너 실행 (모든 logic assert 통과 여부 검증)
+./test_runner
 
-# 노드 기동 (기본 설정으로 구동)
-./StudySpot_Node
-
-# 동적 실행인자 지정 (Node ID와 Room Name 커스텀 기동)
-./StudySpot_Node RPI3-NODE-02 Library-Central-01
+# 3. gcov 실행하여 각 hpp 소스 파일별 테스트 커버리지 생성
+gcov node/test_logic.cpp
 ```
 
-### 2. 미들웨어 데이터 브릿지 실행 (게이트웨이 서버 환경)
-```bash
-# 라이브러리 의존성 설치 (paho-mqtt v1.x & v2.x 호환 지원)
-pip install paho-mqtt requests firebase-admin
+---
 
-# 로컬 MQTT 브로커 서비스 기동 (예: Mosquitto)
-sudo systemctl start mosquitto
+### 🚨 7. 문제 해결 가이드 (Troubleshooting)
 
-# 브릿지 구동
-python bridge/mqtt_to_firebase.py
-```
-*(하드웨어가 없는 모의 테스트 환경에서는 `python bridge/mock_publisher.py`를 실행하여 엣지 데이터 스트리밍을 모사할 수 있습니다.)*
-
-### 3. 실시간 프론트엔드 대시보드 기동
-1. 웹 브라우저에서 [demo_dashboard.html](file:///c:/Users/mg021/StudySpot/demo_dashboard.html) 파일을 직접 실행합니다.
-2. 실시간 Firebase 연동을 원할 경우 우측 상단의 **[실시간 라이브 연결]** 스위치를 활성화하고, 패널 하단 **[DB URL]**에 Firebase Realtime DB Endpoint 주소를 입력해 주시면 즉시 웹소켓 연결이 수립됩니다.
+* **Q1. C++ 엣지 노드 실행 시 ALSA 오디오 디바이스를 오픈할 수 없다고 나옵니다.**
+  * **A1**: [SoundSensor.hpp](file:///c:/Users/mg021/StudySpot/node/drivers/SoundSensor.hpp)는 기본값으로 `"plughw:1,0"` 오디오 카드를 마이크 장치로 오픈합니다. RPi 환경에서 `arecord -l` 명령을 실행하여 마이크의 카드/디바이스 번호를 확인하고 생성자 인자값을 변경하세요. 또한 오디오 권한 그룹에 계정을 추가해야 합니다: `sudo usermod -aG audio $USER`.
+* **Q2. Bluetooth 스캔 기동 시 HCI Socket 오픈 실패 (Permission Denied) 에러가 발생합니다.**
+  * **A2**: BLE 소켓의 로우(Raw) 제어 권한은 root 권한이 필요합니다. 실행 시 `sudo ./StudySpot_Node` 로 구동하거나, 다음 명령어로 컴파일 바이너리에 소켓 권한을 직접 캡(Cap)을 설정하세요:
+    `sudo setcap 'cap_net_raw,cap_net_admin+eip' ./StudySpot_Node`.
+* **Q3. Firebase 연동 시 REST API 전송은 성공했으나 화면에 데이터가 갱신되지 않습니다.**
+  * **A3**: Firebase Realtime DB의 보안 규칙(`.read`, `.write`)을 `true`로 설정했는지 점검하세요. 또한 프론트 대시보드 하단 입력 폼에 기재한 DB 주소 뒤에 불필요한 슬래시나 파라미터가 붙었는지 점검이 필요합니다.
