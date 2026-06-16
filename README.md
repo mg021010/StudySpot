@@ -192,15 +192,47 @@ graph TD
 * **OS & 컴파일러**: 리눅스 데비안 계열 (Raspberry Pi OS 등), GCC 8+ (C++17 표준 지원), CMake 3.10+, Python 3.6+, 최신 웹 브라우저.
 
 ### 6.2 필수 패키지 및 라이브러리 설치
-* **임베디드 노드 의존성 (Linux 환경)**:
-  ```bash
-  sudo apt-get update
-  sudo apt-get install -y cmake g++ libpaho-mqtt-dev libpaho-mqttcpp-dev libasound2-dev libbluetooth-dev
-  ```
-* **미들웨어 브릿지 의존성 (Python 환경)**:
-  ```bash
-  pip install paho-mqtt requests firebase-admin
-  ```
+
+#### 🔌 C++ 임베디드 노드 라이브러리 목록 (라즈베리파이/Linux 환경)
+* **CMake 3.10+ & GCC 8+**: C++17 프로젝트 빌드 및 컴파일용 시스템 유틸리티.
+* **ALSA (Advanced Linux Sound Architecture) 개발 라이브러리**: 마이크 음향 신호 수집 제어용 ([ALSA Project 공식 사이트](https://www.alsa-project.org/)).
+* **BlueZ (Bluetooth Linux Stack) 개발 라이브러리**: 내장 블루투스 칩셋의 로우 레벨 HCI 소켓 스캔 기능용 ([BlueZ 공식 사이트](http://www.bluez.org/)).
+* **Eclipse Paho MQTT C/C++ Client**: 초경량 퍼블리싱 메시징 전송용 ([Paho C Github](https://github.com/eclipse/paho.mqtt.c) / [Paho C++ Github](https://github.com/eclipse/paho.mqtt.cpp)).
+
+##### 📥 패키지 매니저로 초간단 자동 설치:
+```bash
+sudo apt-get update
+sudo apt-get install -y cmake g++ libasound2-dev libbluetooth-dev libpaho-mqtt-dev libpaho-mqttcpp-dev
+```
+
+##### 📥 패키지가 없는 환경을 위한 소스 코드 직접 빌드 및 설치 가이드 (Alternative Source Compilation):
+```bash
+# 1. Paho MQTT C 라이브러리 빌드 및 설치
+git clone https://github.com/eclipse/paho.mqtt.c.git
+cd paho.mqtt.c
+cmake -Bbuild -H. -DPAHO_WITH_SSL=ON -DPAHO_ENABLE_TESTING=OFF
+sudo cmake --build build --target install
+sudo ldconfig && cd ..
+
+# 2. Paho MQTT C++ Wrapper 라이브러리 빌드 및 설치
+git clone https://github.com/eclipse/paho.mqtt.cpp.git
+cd paho.mqtt.cpp
+cmake -Bbuild -H. -DPAHO_BUILD_SHARED=ON -DPAHO_BUILD_SAMPLES=OFF
+sudo cmake --build build --target install
+sudo ldconfig && cd ..
+```
+
+---
+
+#### 🐍 미들웨어 브릿지 라이브러리 목록 (Python 3 환경)
+* **paho-mqtt**: 파이썬 환경의 MQTT 메시지 구독 패키지 ([paho-mqtt PyPI 링크](https://pypi.org/project/paho-mqtt/)).
+* **requests**: Firebase RTDB REST API 전송(Fallback용) HTTP 라이브러리 ([requests PyPI 링크](https://pypi.org/project/requests/)).
+* **firebase-admin**: Firebase RTDB SDK 연동용 라이브러리 ([firebase-admin PyPI 링크](https://pypi.org/project/firebase-admin/)).
+
+##### 📥 패키지 설치:
+```bash
+pip install paho-mqtt requests firebase-admin
+```
 
 ### 6.3 필수 샘플 파일 구성 (Firebase Credential)
 실제 클라우드로 데이터 전송(운영 모드) 시 비공개 키가 필요합니다. `bridge/serviceAccountKey.json` 파일을 아래 양식과 같이 수동 생성해 주셔야 합니다.
