@@ -195,9 +195,9 @@ graph TD
 
 #### 🔌 C++ 임베디드 노드 라이브러리 목록 (라즈베리파이/Linux 환경)
 * **CMake 3.10+ & GCC 8+**: C++17 프로젝트 빌드 및 컴파일용 시스템 유틸리티.
-* **ALSA (Advanced Linux Sound Architecture) 개발 라이브러리**: 마이크 음향 신호 수집 제어용 ([ALSA Project 공식 사이트](https://www.alsa-project.org/)).
-* **BlueZ (Bluetooth Linux Stack) 개발 라이브러리**: 내장 블루투스 칩셋의 로우 레벨 HCI 소켓 스캔 기능용 ([BlueZ 공식 사이트](http://www.bluez.org/)).
-* **Eclipse Paho MQTT C/C++ Client**: 초경량 퍼블리싱 메시징 전송용 ([Paho C Github](https://github.com/eclipse/paho.mqtt.c) / [Paho C++ Github](https://github.com/eclipse/paho.mqtt.cpp)).
+* **ALSA (Advanced Linux Sound Architecture) 개발 라이브러리**: 마이크 음향 신호 수집 제어용 ([ALSA 공식 다운로드 페이지](https://www.alsa-project.org/wiki/Download) / [ALSA lib 소스 코드 GitHub](https://github.com/alsa-project/alsa-lib)).
+* **BlueZ (Bluetooth Linux Stack) 개발 라이브러리**: 내장 블루투스 칩셋의 로우 레벨 HCI 소켓 스캔 기능용 ([BlueZ 공식 다운로드/소스 아카이브](https://www.kernel.org/pub/linux/bluetooth/) / [BlueZ 소스 코드 GitHub](https://github.com/bluez/bluez)).
+* **Eclipse Paho MQTT C/C++ Client**: 초경량 퍼블리싱 메시징 전송용 ([Paho C 설치 가이드](https://github.com/eclipse/paho.mqtt.c#installation) / [Paho C++ 소스 빌드 가이드](https://github.com/eclipse/paho.mqtt.cpp#building-from-source)).
 
 ##### 📥 패키지 매니저로 초간단 자동 설치:
 ```bash
